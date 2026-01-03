@@ -1,70 +1,72 @@
-import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
-import { FcGoogle } from 'react-icons/fc'
-import { FaFacebook } from 'react-icons/fa'
-import { events, filterEvents } from '../data/events'
-import EventCard from '../components/EventCard'
-import SearchFilters from '../components/SearchFilters'
-import SkeletonLoader from '../components/SkeletonLoader'
-import { animateStagger, animateFadeIn } from '../utils/animations'
-import './Home.css'
+import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
+import { FcGoogle } from "react-icons/fc";
+import { FaFacebook } from "react-icons/fa";
+import { events, filterEvents } from "../data/events";
+import EventCard from "../components/EventCard";
+import SearchFilters from "../components/SearchFilters";
+import SkeletonLoader from "../components/SkeletonLoader";
+import RecommendationSection from "../components/RecommendationSection";
+import { animateStagger, animateFadeIn } from "../utils/animations";
+import { recordInteraction } from "../services/personalizationService";
+import "./Home.css";
 
 function Home({ favorites, toggleFavorite }) {
-  const [filteredEvents, setFilteredEvents] = useState(events)
-  const [isLoading, setIsLoading] = useState(true)
-  const eventsGridRef = useRef(null)
-  const heroRef = useRef(null)
-  const [user, setUser] = useState(null)
-  const [showAccountMenu, setShowAccountMenu] = useState(false)
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const [authMode, setAuthMode] = useState('signin')
-  const [authEmail, setAuthEmail] = useState('')
-  const [authPassword, setAuthPassword] = useState('')
+  const [filteredEvents, setFilteredEvents] = useState(events);
+  const [isLoading, setIsLoading] = useState(true);
+  const eventsGridRef = useRef(null);
+  const heroRef = useRef(null);
+  const [user, setUser] = useState(null);
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState("signin");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
   const [filters, setFilters] = useState({
-    category: 'all',
-    search: '',
-    date: '',
-    location: ''
-  })
+    category: "all",
+    search: "",
+    date: "",
+    location: "",
+  });
 
   useEffect(() => {
     // Simulate loading
     const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 800)
-    
+      setIsLoading(false);
+    }, 800);
+
     // Animate hero on mount
     if (heroRef.current) {
-      setTimeout(() => animateFadeIn(heroRef.current, 0), 100)
+      setTimeout(() => animateFadeIn(heroRef.current, 0), 100);
     }
-    
-    return () => clearTimeout(timer)
-  }, [])
+
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
-    const filtered = filterEvents(filters)
-    setFilteredEvents(filtered)
-    
+    const filtered = filterEvents(filters);
+    setFilteredEvents(filtered);
+
     // Animate cards with stagger
     if (eventsGridRef.current) {
       setTimeout(() => {
-        const cards = eventsGridRef.current.querySelectorAll('.event-card')
+        const cards = eventsGridRef.current.querySelectorAll(".event-card");
         if (cards.length > 0) {
-          animateStagger(cards, 0.05)
+          animateStagger(cards, 0.05);
         }
-      }, 200)
+      }, 200);
     }
-    
+
     // Track views for hype score (simulate)
-    filtered.forEach(event => {
+    filtered.forEach((event) => {
       // In a real app, this would be an API call
       // For prototype, we'll just update locally
-    })
-  }, [filters])
+    });
+  }, [filters]);
 
   const handleFilterChange = (newFilters) => {
-    setFilters(prev => ({ ...prev, ...newFilters }))
-  }
+    setFilters((prev) => ({ ...prev, ...newFilters }));
+  };
 
   return (
     <div className="home">
@@ -76,10 +78,10 @@ function Home({ favorites, toggleFavorite }) {
           <button
             type="button"
             className="hero-account-pill"
-            onClick={() => setShowAccountMenu(prev => !prev)}
+            onClick={() => setShowAccountMenu((prev) => !prev)}
           >
             <div className="hero-account-avatar">
-              {user.email?.charAt(0)?.toUpperCase() || 'U'}
+              {user.email?.charAt(0)?.toUpperCase() || "U"}
             </div>
             <div className="hero-account-text">
               <span className="hero-account-label">Signed in</span>
@@ -90,8 +92,8 @@ function Home({ favorites, toggleFavorite }) {
           <button
             className="hero-signin-btn"
             onClick={() => {
-              setAuthMode('signin')
-              setShowAuthModal(true)
+              setAuthMode("signin");
+              setShowAuthModal(true);
             }}
           >
             Sign in
@@ -107,7 +109,7 @@ function Home({ favorites, toggleFavorite }) {
 
       <div className="container">
         <SearchFilters filters={filters} onFilterChange={handleFilterChange} />
-        
+
         {isLoading ? (
           <div className="events-grid" ref={eventsGridRef}>
             <SkeletonLoader type="event-card" count={3} />
@@ -117,20 +119,28 @@ function Home({ favorites, toggleFavorite }) {
             <div className="empty-state-icon">🔍</div>
             <h3 className="empty-state-title">No events found</h3>
             <p className="empty-state-message">
-              Try adjusting your search filters or check back later for new events.
+              Try adjusting your search filters or check back later for new
+              events.
             </p>
           </div>
         ) : (
-          <div className="events-grid" ref={eventsGridRef}>
-            {filteredEvents.map(event => (
-              <EventCard
-                key={event.id}
-                event={event}
-                isFavorite={favorites.includes(event.id)}
-                onToggleFavorite={toggleFavorite}
-              />
-            ))}
-          </div>
+          <>
+            <RecommendationSection
+              allEvents={events}
+              favorites={favorites}
+              onToggleFavorite={toggleFavorite}
+            />
+            <div className="events-grid" ref={eventsGridRef}>
+              {filteredEvents.map((event) => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  isFavorite={favorites.includes(event.id)}
+                  onToggleFavorite={toggleFavorite}
+                />
+              ))}
+            </div>
+          </>
         )}
       </div>
 
@@ -140,9 +150,9 @@ function Home({ favorites, toggleFavorite }) {
             type="button"
             className="hero-account-menu-item"
             onClick={() => {
-              setShowAccountMenu(false)
-              setAuthMode('signin')
-              setShowAuthModal(true)
+              setShowAccountMenu(false);
+              setAuthMode("signin");
+              setShowAuthModal(true);
             }}
           >
             Account
@@ -151,12 +161,12 @@ function Home({ favorites, toggleFavorite }) {
             type="button"
             className="hero-account-menu-item"
             onClick={() => {
-              setShowAccountMenu(false)
-              setUser(null)
-              setAuthEmail('')
-              setAuthPassword('')
-              setAuthMode('signin')
-              setShowAuthModal(true)
+              setShowAccountMenu(false);
+              setUser(null);
+              setAuthEmail("");
+              setAuthPassword("");
+              setAuthMode("signin");
+              setShowAuthModal(true);
             }}
           >
             Switch account
@@ -165,12 +175,12 @@ function Home({ favorites, toggleFavorite }) {
             type="button"
             className="hero-account-menu-item"
             onClick={() => {
-              setShowAccountMenu(false)
-              setUser(null)
-              setAuthEmail('')
-              setAuthPassword('')
+              setShowAccountMenu(false);
+              setUser(null);
+              setAuthEmail("");
+              setAuthPassword("");
               // Simple prototype alert
-              window.alert('You have been logged out successfully.')
+              window.alert("You have been logged out successfully.");
             }}
           >
             Log out
@@ -180,10 +190,7 @@ function Home({ favorites, toggleFavorite }) {
 
       {showAuthModal && (
         <div className="auth-overlay" onClick={() => setShowAuthModal(false)}>
-          <div
-            className="auth-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="auth-modal" onClick={(e) => e.stopPropagation()}>
             <div className="auth-header">
               <button
                 type="button"
@@ -193,7 +200,7 @@ function Home({ favorites, toggleFavorite }) {
               >
                 ←
               </button>
-              <h2>{authMode === 'signin' ? 'Sign in' : 'Create account'}</h2>
+              <h2>{authMode === "signin" ? "Sign in" : "Create account"}</h2>
             </div>
             <p className="auth-subtitle">
               Use your email or continue with a connected account.
@@ -202,10 +209,10 @@ function Home({ favorites, toggleFavorite }) {
             <form
               className="auth-form"
               onSubmit={(e) => {
-                e.preventDefault()
-                if (!authEmail) return
-                setUser({ email: authEmail })
-                setShowAuthModal(false)
+                e.preventDefault();
+                if (!authEmail) return;
+                setUser({ email: authEmail });
+                setShowAuthModal(false);
               }}
             >
               <label>
@@ -229,8 +236,11 @@ function Home({ favorites, toggleFavorite }) {
                 />
               </label>
 
-              <button type="submit" className="btn btn-primary auth-primary-btn">
-                {authMode === 'signin' ? 'Sign in' : 'Register'}
+              <button
+                type="submit"
+                className="btn btn-primary auth-primary-btn"
+              >
+                {authMode === "signin" ? "Sign in" : "Register"}
               </button>
             </form>
 
@@ -241,41 +251,37 @@ function Home({ favorites, toggleFavorite }) {
             </div>
 
             <div className="auth-social-row">
-              <button
-                type="button"
-                className="auth-social-btn google"
-              >
+              <button type="button" className="auth-social-btn google">
                 <FcGoogle /> Continue with Google
               </button>
-              <button
-                type="button"
-                className="auth-social-btn facebook"
-              >
+              <button type="button" className="auth-social-btn facebook">
                 <FaFacebook /> Continue with Facebook
               </button>
             </div>
 
             <div className="auth-footer">
               <span>
-                {authMode === 'signin'
+                {authMode === "signin"
                   ? "Don't have an account?"
-                  : 'Already have an account?'}
+                  : "Already have an account?"}
               </span>
               <button
                 type="button"
                 className="auth-switch-btn"
                 onClick={() =>
-                  setAuthMode(mode => (mode === 'signin' ? 'register' : 'signin'))
+                  setAuthMode((mode) =>
+                    mode === "signin" ? "register" : "signin"
+                  )
                 }
               >
-                {authMode === 'signin' ? 'Register now' : 'Sign in'}
+                {authMode === "signin" ? "Register now" : "Sign in"}
               </button>
             </div>
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default Home
+export default Home;
