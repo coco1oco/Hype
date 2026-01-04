@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production
+dist/
+web-build/
+
+# Local env files
+.env
+.env.local
+*.local
+
+# Expo
+.expo/
+*.jks
+*.p12
+*.key
+*.mobileprovision
+
+# OS files
+.DS_Store
+Thumbs.db
