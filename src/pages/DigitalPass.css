@@ -1,0 +1,212 @@
+.digital-pass {
+  min-height: 100vh;
+  padding: 24px 0;
+  background: linear-gradient(135deg, var(--background-secondary) 0%, var(--gray-6) 100%);
+}
+
+.pass-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.pass-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.pass-header h1 {
+  font-size: 34px;
+  color: var(--text-primary);
+  font-weight: 700;
+  letter-spacing: 0.011em;
+}
+
+.pass-status {
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pass-status.active {
+  background: rgba(52, 199, 89, 0.1);
+  color: var(--system-green);
+}
+
+.pass-status.checked-in {
+  background: rgba(0, 122, 255, 0.1);
+  color: var(--system-blue);
+}
+
+.pass-card {
+  background: var(--background-primary);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  animation: appleScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.pass-qr {
+  text-align: center;
+  padding: 20px;
+  background: var(--background-secondary);
+  border-radius: 16px;
+  margin-bottom: 24px;
+  border: 0.5px solid var(--separator);
+}
+
+.pass-qr img {
+  width: 200px;
+  height: 200px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+}
+
+.ticket-id {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-family: 'SF Mono', Monaco, monospace;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+.pass-details h2 {
+  font-size: 22px;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: -0.016em;
+}
+
+.pass-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 0.5px solid var(--separator);
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-size: 15px;
+  color: var(--text-tertiary);
+  font-weight: 400;
+  letter-spacing: -0.022em;
+}
+
+.info-value {
+  font-size: 17px;
+  color: var(--text-primary);
+  font-weight: 400;
+  text-align: right;
+  letter-spacing: -0.022em;
+}
+
+.pass-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.pass-actions .btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 17px;
+  min-height: 50px;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.pass-actions .btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pass-instructions {
+  background: var(--background-primary);
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+}
+
+.pass-instructions h3 {
+  font-size: 20px;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+  font-weight: 600;
+  letter-spacing: -0.019em;
+}
+
+.pass-instructions ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pass-instructions li {
+  padding: 8px 0;
+  color: var(--text-primary);
+  position: relative;
+  padding-left: 24px;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: -0.022em;
+  line-height: 1.47059;
+}
+
+.pass-instructions li:before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--system-blue);
+  font-weight: 600;
+  font-size: 20px;
+}
+
+@media (min-width: 768px) {
+  .pass-container {
+    padding: 0;
+  }
+  
+  .pass-card {
+    padding: 32px;
+  }
+  
+  .pass-qr img {
+    width: 220px;
+    height: 220px;
+  }
+  
+  .pass-actions {
+    flex-direction: row;
+    gap: 16px;
+  }
+  
+  .pass-actions .btn {
+    flex: 1;
+    padding: 12px;
+    min-height: 44px;
+  }
+}

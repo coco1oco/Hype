@@ -1,0 +1,39 @@
+.event-map-container {
+  margin-top: 16px;
+}
+
+.map-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+}
+
+.map-actions .btn {
+  flex: 1;
+}
+
+/* Override Leaflet styles for Apple aesthetic */
+.leaflet-container {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 0.5px solid var(--separator);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', sans-serif;
+}
+
+.leaflet-popup-content {
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: -0.022em;
+  color: var(--text-primary);
+}
+
+.leaflet-popup-tip {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}

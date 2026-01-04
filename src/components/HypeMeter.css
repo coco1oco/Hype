@@ -1,0 +1,91 @@
+.hype-meter {
+  background: var(--background-primary);
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  animation: appleSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hype-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.hype-header h3 {
+  font-size: 17px;
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 600;
+  letter-spacing: -0.022em;
+}
+
+.hype-category {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hype-visualization {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.hype-bar-container {
+  flex: 1;
+  height: 8px;
+  background: var(--background-secondary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.hype-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hype-score {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 50px;
+  text-align: right;
+  letter-spacing: -0.022em;
+}
+
+.hype-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 0.5px solid var(--separator);
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.metric-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--system-blue);
+  letter-spacing: -0.022em;
+}
+
+.metric-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}

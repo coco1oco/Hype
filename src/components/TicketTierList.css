@@ -1,0 +1,120 @@
+.ticket-tier-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ticket-tier {
+  border: 0.5px solid var(--separator);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--background-primary);
+}
+
+.ticket-tier:hover {
+  border-color: var(--system-blue);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.ticket-tier:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tier-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.tier-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  margin-right: 6px;
+  margin-top: 4px;
+}
+
+.tier-chip-resale {
+  background: rgba(52, 199, 89, 0.12);
+  color: #34C759;
+  border: 1px solid rgba(52, 199, 89, 0.4);
+}
+
+.tier-chip-auction {
+  background: rgba(255, 149, 0, 0.12);
+  color: #FF9500;
+  border: 1px solid rgba(255, 149, 0, 0.4);
+}
+
+.tier-name {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 6px 0;
+  color: var(--text-primary);
+  letter-spacing: -0.022em;
+}
+
+.tier-availability {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tier-price {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.tier-currency {
+  font-size: 15px;
+  color: var(--text-secondary);
+  font-weight: 400;
+  letter-spacing: -0.022em;
+}
+
+.tier-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--system-blue);
+  letter-spacing: -0.022em;
+}
+
+.tier-perks {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tier-purchase-btn {
+  margin-top: 12px;
+}
+
+.tier-perks li {
+  font-size: 15px;
+  color: var(--text-primary);
+  padding-left: 4px;
+  font-weight: 400;
+  letter-spacing: -0.022em;
+}
+
+.tier-purchase-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -0.022em;
+}
+
+.tier-purchase-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

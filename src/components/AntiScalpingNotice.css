@@ -1,0 +1,149 @@
+.anti-scalping-notice {
+  border-radius: 12px;
+  padding: 16px;
+  margin: 20px 0;
+  border-left: 4px solid;
+  transition: all 0.3s ease;
+}
+
+.anti-scalping-notice.info {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 122, 255, 0.08) 0%,
+    rgba(0, 122, 255, 0.04) 100%
+  );
+  border-left-color: #007aff;
+}
+
+.anti-scalping-notice.warning {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 193, 7, 0.12) 0%,
+    rgba(255, 193, 7, 0.06) 100%
+  );
+  border-left-color: #ffc107;
+}
+
+.anti-scalping-notice.error {
+  background: linear-gradient(
+    135deg,
+    rgba(244, 67, 54, 0.12) 0%,
+    rgba(244, 67, 54, 0.06) 100%
+  );
+  border-left-color: #f44336;
+}
+
+.anti-scalping-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.anti-scalping-icon {
+  font-size: 20px;
+  color: #007aff;
+}
+
+.anti-scalping-notice.warning .anti-scalping-icon {
+  color: #ffc107;
+}
+
+.anti-scalping-notice.error .anti-scalping-icon {
+  color: #f44336;
+}
+
+.anti-scalping-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.015em;
+}
+
+.anti-scalping-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.anti-scalping-text {
+  font-size: 14px;
+  margin: 0;
+  flex: 1;
+  line-height: 1.5;
+  color: #333;
+}
+
+.check-icon {
+  font-size: 14px;
+  color: #4caf50;
+  margin-right: 6px;
+}
+
+.anti-scalping-toggle {
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.anti-scalping-toggle:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.toggle-icon {
+  font-size: 13px;
+}
+
+.anti-scalping-details {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.detail-item {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.detail-item h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 6px 0;
+  color: #000;
+}
+
+.detail-item p {
+  font-size: 12px;
+  margin: 0;
+  color: #666;
+}
+
+@media (max-width: 640px) {
+  .anti-scalping-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .anti-scalping-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .anti-scalping-details {
+    grid-template-columns: 1fr;
+  }
+}

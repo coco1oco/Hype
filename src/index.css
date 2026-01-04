@@ -1,0 +1,259 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Apple Design System Colors */
+  --system-blue: #007AFF;
+  --system-green: #34C759;
+  --system-indigo: #5856D6;
+  --system-orange: #FF9500;
+  --system-pink: #FF2D55;
+  --system-purple: #AF52DE;
+  --system-red: #FF3B30;
+  --system-teal: #5AC8FA;
+  --system-yellow: #FFCC00;
+  
+  /* Apple Gray Scale */
+  --gray-1: #8E8E93;
+  --gray-2: #AEAEB2;
+  --gray-3: #C7C7CC;
+  --gray-4: #D1D1D6;
+  --gray-5: #E5E5EA;
+  --gray-6: #F2F2F7;
+  
+  /* Backgrounds */
+  --background-primary: #FFFFFF;
+  --background-secondary: #F8F9FA;
+  --background-tertiary: #FFFFFF;
+  
+  /* Text Colors */
+  --text-primary: #000000;
+  --text-secondary: #3C3C43;
+  --text-tertiary: #3C3C4399;
+  --text-quaternary: #3C3C434D;
+  
+  /* Separators */
+  --separator: #C6C6C8;
+  --separator-opaque: #38383A;
+  
+  /* System Colors */
+  --label: #000000;
+  --secondary-label: #3C3C4399;
+  --tertiary-label: #3C3C434D;
+  --quaternary-label: #3C3C4329;
+  
+  /* Shadows - Apple Style */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+  --shadow-xl: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+  
+  /* Legacy support */
+  --primary: var(--system-blue);
+  --text: var(--text-primary);
+  --text-light: var(--text-secondary);
+  --background: var(--background-primary);
+  --surface: var(--background-secondary);
+  --border: var(--separator);
+  
+  /* Spacing Scale (8px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
+  --space-10: 64px;
+  
+  /* Enhanced Transitions */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  font-size: 16px;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--background-secondary);
+  color: var(--text-primary);
+  line-height: 1.47059;
+  font-weight: 400;
+  letter-spacing: -0.022em;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: pan-y;
+  margin: 0;
+  padding: 0;
+}
+
+::selection {
+  background: rgba(0, 122, 255, 0.2);
+  color: var(--text-primary);
+}
+
+/* Apple Typography Scale */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  letter-spacing: -0.024em;
+  line-height: 1.1;
+}
+
+h1 { font-size: 34px; font-weight: 700; letter-spacing: 0.011em; }
+h2 { font-size: 28px; font-weight: 700; letter-spacing: 0.013em; }
+h3 { font-size: 22px; font-weight: 600; letter-spacing: 0.016em; }
+h4 { font-size: 20px; font-weight: 600; letter-spacing: 0.019em; }
+h5 { font-size: 17px; font-weight: 600; letter-spacing: 0.021em; }
+h6 { font-size: 15px; font-weight: 600; letter-spacing: 0.024em; }
+
+code {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
+/* Apple-style Buttons */
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  font-weight: 400;
+  letter-spacing: -0.022em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Apple Inputs */
+input, select, textarea {
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 10px;
+  font-weight: 400;
+  letter-spacing: -0.022em;
+}
+
+input[type="date"],
+input[type="text"],
+select {
+  border-radius: 10px;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+a:active {
+  opacity: 0.6;
+}
+
+/* Prevent pull-to-refresh on mobile */
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Smooth scrolling with Apple's easing */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--space-4);
+}
+
+/* Apple-style animations */
+@keyframes appleFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes appleSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes appleScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes appleBlur {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(20px);
+  }
+}
+
+/* Spring animation utility */
+.spring-animation {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.smooth-animation {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dark mode support (for future) - Disabled for now */
+/* @media (prefers-color-scheme: dark) {
+  :root {
+    --background-primary: #000000;
+    --background-secondary: #000000;
+    --text-primary: #FFFFFF;
+    --text-secondary: #EBEBF5;
+    --text-tertiary: #EBEBF599;
+    --separator: #38383A;
+  }
+} */

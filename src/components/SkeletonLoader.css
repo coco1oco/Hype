@@ -1,0 +1,208 @@
+/* Skeleton Loader Base */
+.skeleton-card,
+.skeleton-event-card,
+.skeleton-ticket-card,
+.skeleton-detail {
+  background: var(--background-primary);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Shimmer Animation */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--gray-6) 0%,
+    var(--gray-5) 20%,
+    var(--gray-6) 40%,
+    var(--gray-6) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Event Card Skeleton */
+.skeleton-event-card {
+  margin-bottom: 20px;
+}
+
+.skeleton-event-image {
+  width: 100%;
+  height: 240px;
+  background: var(--gray-6);
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-event-image::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-event-details {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-venue {
+  width: 60%;
+  height: 20px;
+}
+
+.skeleton-tags {
+  width: 40%;
+  height: 16px;
+}
+
+.skeleton-price {
+  width: 30%;
+  height: 20px;
+  margin-top: 8px;
+}
+
+/* Ticket Card Skeleton */
+.skeleton-ticket-card {
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.skeleton-ticket-header {
+  margin-bottom: 16px;
+}
+
+.skeleton-ticket-title {
+  width: 70%;
+  height: 24px;
+  margin-bottom: 8px;
+}
+
+.skeleton-ticket-date {
+  width: 50%;
+  height: 18px;
+}
+
+.skeleton-ticket-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-ticket-info {
+  width: 100%;
+  height: 16px;
+}
+
+.skeleton-ticket-info:last-child {
+  width: 80%;
+}
+
+/* Detail Page Skeleton */
+.skeleton-detail-hero {
+  width: 100%;
+  height: 300px;
+  background: var(--gray-6);
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-detail-hero::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-detail-content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-detail-title {
+  width: 80%;
+  height: 32px;
+}
+
+.skeleton-detail-subtitle {
+  width: 60%;
+  height: 24px;
+}
+
+.skeleton-detail-text {
+  width: 100%;
+  height: 16px;
+}
+
+.skeleton-detail-text-short {
+  width: 70%;
+  height: 16px;
+}
+
+/* Generic Skeleton Line */
+.skeleton-line {
+  background: var(--gray-6);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-line::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+@media (min-width: 768px) {
+  .skeleton-event-image {
+    height: 280px;
+  }
+  
+  .skeleton-detail-hero {
+    height: 400px;
+  }
+}
+
