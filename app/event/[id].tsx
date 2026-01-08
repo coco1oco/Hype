@@ -1,7 +1,6 @@
-// app/event/[id].tsx
-import { events } from "../../data/events";
-import { FavoritesContext } from "../../context/FavoritesContext";
 import React from "react";
+import { Image } from "react-native";
+
 import {
   View,
   Text,
@@ -9,9 +8,13 @@ import {
   ImageBackground,
   TouchableOpacity,
   SafeAreaView,
+  Linking,
 } from "react-native";
-import { useLocalSearchParams, useRouter, Href } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Home, Heart, Ticket, QrCode } from "lucide-react-native";
+import { events } from "../../data/events";
+import { FavoritesContext } from "../../context/FavoritesContext";
+
 
 type Tab = {
   key: "home" | "saved" | "tickets" | "scan";
@@ -65,6 +68,12 @@ const isSaved = saved.some((e) => e.id === event.id);
     minute: "2-digit",
   });
   const venue = `${event.venue}, ${event.city}`;
+  const openInGoogleMaps = () => {
+    const query = encodeURIComponent(`${event.venue} ${event.city}`);
+    const url = `https://www.google.com/maps/search/?api=1&query=${query}`; // Maps URL format [web:283]
+    Linking.openURL(url);
+  };
+
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#f5f5f7" }}>
@@ -245,33 +254,41 @@ const isSaved = saved.some((e) => e.id === event.id);
 
             {/* Location + map placeholder */}
             <Card>
-              <Text style={styles.cardTitle}>Location</Text>
-              <View
-                style={{
-                  height: 220,
-                  borderRadius: 16,
-                  overflow: "hidden",
-                  marginTop: 12,
-                  backgroundColor: "#e5e5ea",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text style={{ color: "#3C3C43" }}>Map goes here</Text>
-              </View>
-              <TouchableOpacity
-                style={{
-                  marginTop: 10,
-                  alignSelf: "center",
-                  paddingVertical: 8,
-                  paddingHorizontal: 16,
-                }}
-              >
-                <Text style={{ color: "#007AFF", fontWeight: "500" }}>
-                  Open in Google Maps
-                </Text>
-              </TouchableOpacity>
-            </Card>
+  <Text style={styles.cardTitle}>Location</Text>
+
+  {/* Make the static map clickable */}
+  <TouchableOpacity
+    onPress={openInGoogleMaps}
+    activeOpacity={0.8}
+    style={{
+      height: 220,
+      borderRadius: 16,
+      overflow: "hidden",
+      marginTop: 12,
+    }}
+  >
+    <Image
+      source={require("../../assets/static-map.png")}
+      style={{ width: "100%", height: "100%" }}
+      resizeMode="cover"
+    />
+  </TouchableOpacity>
+
+  {/* Optional extra button below */}
+  <TouchableOpacity
+    style={{
+      marginTop: 10,
+      alignSelf: "center",
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+    }}
+    onPress={openInGoogleMaps}
+  >
+    <Text style={{ color: "#007AFF", fontWeight: "500" }}>
+      Open in Google Maps
+    </Text>
+  </TouchableOpacity>
+</Card>
 
             {/* Plan & Essentials */}
             <Card>
