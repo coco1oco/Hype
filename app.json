@@ -40,11 +40,16 @@
         }
       ],
       "@react-native-community/datetimepicker",
-      "expo-maps"
+      "expo-maps",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "EXPO_PUBLIC_SUPABASE_URL": "https://bfdoklcifpqhcceawnso.supabase.co",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmZG9rbGNpZnBxaGNjZWF3bnNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MDg2MTUsImV4cCI6MjA4MzI4NDYxNX0.RJMU9p9pKtrZevm7ktAKFGBx_-U2BGWQL0A9X4y6fpw"
     }
   }
 }
