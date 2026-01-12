@@ -1,6 +1,5 @@
 import React from "react";
 import { Image } from "react-native";
-
 import {
   View,
   Text,
@@ -11,69 +10,146 @@ import {
   Linking,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Home, Heart, Ticket, QrCode } from "lucide-react-native";
-import { events } from "../../data/events";
-import { FavoritesContext } from "../../context/FavoritesContext";
+import { Home, Heart, Ticket } from "lucide-react-native";
 
+import { supabase } from "../../lib/supabase";
+import { FavoritesContext } from "../../context/FavoritesContext";
 
 type Tab = {
   key: "home" | "saved" | "tickets" | "scan";
   label: string;
   icon: React.ComponentType<any>;
-  href: string; // loosen type
+  href: string;
 };
 
 const tabs: Tab[] = [
-  { key: "home", label: "Home", icon: Home, href: "/" },
+  { key: "home", label: "Home", icon: Home, href: "/event" },
   { key: "saved", label: "Saved", icon: Heart, href: "/saved" },
   { key: "tickets", label: "Tickets", icon: Ticket, href: "/tickets" },
-  { key: "scan", label: "Scan", icon: QrCode, href: "/scan" }, // can add later
 ];
 
-const coverMap: Record<string, any> = {
-  "/twice.jpg": require("../../assets/twice.jpg"),
-  "/blackpink.jpg": require("../../assets/blackpink.jpg"),
-  "/tyla.jpg": require("../../assets/tyla.jpg"),
-  "/day6.jpg": require("../../assets/day6.jpg"),
-  "/ham.jpg": require("../../assets/ham.jpg"),
-  "/cs.png": require("../../assets/cs.png"),
-  "/cvsu.jpg": require("../../assets/cvsu.jpg"),
-};
-
+const fallbackImage = require("../../assets/twice.jpg");
 
 export default function EventDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const event = events.find((e) => e.id === id);
+  const [event, setEvent] = React.useState<any | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadEvent = async () => {
+      if (!id) return;
+
+      const { data, error } = await supabase
+        .from("events")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) {
+        console.error("loadEvent error", error);
+        setEvent(null);
+      } else {
+        setEvent(data);
+      }
+      setLoading(false);
+    };
+
+    loadEvent();
+  }, [id]);
+
+  const { saved, toggleSave } = React.useContext(FavoritesContext);
+
+  if (loading) {
+    return (
+      <SafeAreaView
+        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+      >
+        <Text>Loading event…</Text>
+      </SafeAreaView>
+    );
+  }
 
   if (!event) {
     return (
-      <SafeAreaView style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <SafeAreaView
+        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+      >
         <Text>Event not found.</Text>
       </SafeAreaView>
     );
   }
 
-  const { saved, toggleSave } = React.useContext(FavoritesContext);
-const isSaved = saved.some((e) => e.id === event.id);
+  const isSaved = saved.some((e) => e.id === event.id);
 
-  const eventTitle = event.title;
-  const dateTime = new Date(event.startTime).toLocaleString("en-PH", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-  const venue = `${event.venue}, ${event.city}`;
+  const eventTitle = event.name || event.title;
+  const dateTime = new Date(event.date || event.start_time).toLocaleString(
+    "en-PH",
+    {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }
+  );
+  const venue =
+    event.location ||
+    `${event.venue ?? ""}${event.city ? `, ${event.city}` : ""}`;
+
   const openInGoogleMaps = () => {
-    const query = encodeURIComponent(`${event.venue} ${event.city}`);
-    const url = `https://www.google.com/maps/search/?api=1&query=${query}`; // Maps URL format [web:283]
+    const query = encodeURIComponent(venue);
+    const url = `https://www.google.com/maps/search/?api=1&query=${query}`;
     Linking.openURL(url);
   };
 
+  const handlePurchase = () => {
+    router.push({
+      pathname: "/purchase/[id]",
+      params: { id: event.id },
+    } as any);
+  };
+
+  // Build safe tags array with unique keys (drop category since column is not in table)
+  const tags: string[] = (
+    event.tags && event.tags.length > 0
+      ? event.tags
+      : [event.city || event.location]
+  )
+    .filter((t: any) => typeof t === "string" && t.trim().length > 0)
+    .map((t: string) => t.trim());
+
+  // hero image: prefer first featured_images URL, else fallback
+  const featuredHero =
+    Array.isArray(event.featured_images) &&
+    event.featured_images.length > 0 &&
+    typeof event.featured_images[0] === "string"
+      ? { uri: event.featured_images[0] as string }
+      : undefined;
+
+  const heroSource = featuredHero ?? fallbackImage;
+
+  // ---------- randomized hype score (local only) ----------
+  const hypeScore = React.useMemo(() => {
+    const min = 60;
+    const max = 99;
+    const raw = String(event.id || "")
+      .split("")
+      .reduce((acc: number, ch: string) => acc + ch.charCodeAt(0), 0);
+    const rand = (Math.sin(raw) + 1) / 2; // 0–1
+    return Math.floor(rand * (max - min + 1)) + min;
+  }, [event.id]);
+
+  const hypeViews = React.useMemo(() => {
+    const min = 500;
+    const max = 5000;
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }, []);
+
+  const hypeBuyers = Math.floor(hypeScore * 10);
+  const hypeRecency = `${hypeScore}%`;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#f5f5f7" }}>
@@ -84,211 +160,191 @@ const isSaved = saved.some((e) => e.id === event.id);
           }}
         >
           {/* Hero header */}
-                  {/* Hero header */}
-        <ImageBackground
-          source={
-            coverMap[event.cover] ??
-            (event.cover.startsWith("http")
-              ? { uri: event.cover }
-              : require("../../assets/twice.jpg"))
-          }
-          style={{ width: "100%", height: 260 }}
-          resizeMode="cover"
-        >
-          <View
-            style={{
-              flex: 1,
-              paddingHorizontal: 16,
-              paddingTop: 12,
-              justifyContent: "space-between",
-            }}
+          <ImageBackground
+            source={heroSource}
+            style={{ width: "100%", height: 260 }}
+            resizeMode="cover"
           >
-            {/* Back button */}
-            <TouchableOpacity
-              onPress={() => router.back()}
+            <View
               style={{
-                alignSelf: "flex-start",
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 999,
-                backgroundColor: "rgba(0,0,0,0.55)",
-                flexDirection: "row",
-                alignItems: "center",
-                marginTop: 8,
+                flex: 1,
+                paddingHorizontal: 16,
+                paddingTop: 12,
+                justifyContent: "space-between",
               }}
             >
-              <Text style={{ color: "#fff", fontSize: 16 }}>←</Text>
-              <Text
+              {/* Back button */}
+              <TouchableOpacity
+                onPress={() => router.back()}
                 style={{
-                  color: "#fff",
-                  marginLeft: 6,
-                  fontSize: 14,
-                  fontWeight: "500",
+                  alignSelf: "flex-start",
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: 999,
+                  backgroundColor: "rgba(0,0,0,0.55)",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginTop: 8,
                 }}
               >
-                Back
+                <Text style={{ color: "#fff", fontSize: 16 }}>←</Text>
+                <Text
+                  style={{
+                    color: "#fff",
+                    marginLeft: 6,
+                    fontSize: 14,
+                    fontWeight: "500",
+                  }}
+                >
+                  Back
+                </Text>
+              </TouchableOpacity>
+
+              {/* Title + meta */}
+              <View style={{ marginBottom: 18 }}>
+                <Text
+                  style={{
+                    color: "rgba(255,255,255,0.9)",
+                    fontSize: 12,
+                    marginBottom: 4,
+                  }}
+                >
+                  Event · {event.city || event.location}
+                </Text>
+
+                <Text
+                  style={{
+                    color: "#fff",
+                    fontSize: 24,
+                    fontWeight: "800",
+                    marginBottom: 8,
+                  }}
+                >
+                  {eventTitle}
+                </Text>
+
+                <Text
+                  style={{
+                    color: "rgba(255,255,255,0.9)",
+                    fontSize: 13,
+                    marginBottom: 4,
+                  }}
+                >
+                  {dateTime}
+                </Text>
+
+                <Text
+                  style={{
+                    color: "rgba(255,255,255,0.9)",
+                    fontSize: 13,
+                  }}
+                >
+                  {venue}
+                </Text>
+              </View>
+            </View>
+          </ImageBackground>
+
+          {/* Main body */}
+          <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+            {/* About this event */}
+            <Card>
+              <Text style={styles.cardTitle}>About This Event</Text>
+              <Text style={styles.cardBody}>
+                {event.description
+                  ? event.description
+                  : `${eventTitle} at ${venue}.`}
               </Text>
-            </TouchableOpacity>
-
-            {/* Title + meta */}
-            <View style={{ marginBottom: 18 }}>
-  <Text
-    style={{
-      color: "rgba(255,255,255,0.9)",
-      fontSize: 12,
-      marginBottom: 4,
-    }}
-  >
-    {event.category} · {event.city}
-  </Text>
-
-  <Text
-    style={{
-      color: "#fff",
-      fontSize: 24,
-      fontWeight: "800",
-      marginBottom: 8,
-    }}
-  >
-    {eventTitle}
-  </Text>
-
-  <Text
-    style={{
-      color: "rgba(255,255,255,0.9)",
-      fontSize: 13,
-      marginBottom: 4,
-    }}
-  >
-    {dateTime}
-  </Text>
-
-  <Text
-    style={{
-      color: "rgba(255,255,255,0.9)",
-      fontSize: 13,
-    }}
-  >
-    {venue}
-  </Text>
-</View>
-
-          </View>
-        </ImageBackground>
-
-        {/* Main body */}
-        <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
-          {/* About this event */}
-          <Card>
-            <Text style={styles.cardTitle}>About This Event</Text>
-            <Text style={styles.cardBody}>
-              {event.description
-                ? event.description
-                : `${event.title} at ${event.venue} in ${event.city}.`}
-            </Text>
-          </Card>
-
-
+            </Card>
 
             {/* Event details */}
             <Card>
-  <Text style={styles.cardTitle}>Event Details</Text>
-  <View
-    style={{
-      flexDirection: "row",
-      marginTop: 12,
-    }}
-  >
-    <View style={{ flex: 1, paddingRight: 8 }}>
-      <DetailRow
-        label="Date & Time"
-        value={dateTime}               // ← use computed dateTime
-      />
-      <DetailRow
-        label="Location"
-        value={event.city}             // ← from event
-      />
-      <DetailRow
-        label="Accessibility"
-        value="✓ Wheelchair accessible"
-      />
-    </View>
-    <View style={{ flex: 1, paddingLeft: 8 }}>
-      <DetailRow
-        label="Venue"
-        value={event.venue}            // ← from event
-      />
-      <DetailRow
-        label="Venue Type"
-        value="indoor"
-      />
-      <DetailRow
-        label="Organizer"
-        value="Live Nation Philippines"
-      />
-    </View>
-  </View>
+              <Text style={styles.cardTitle}>Event Details</Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  marginTop: 12,
+                }}
+              >
+                <View style={{ flex: 1, paddingRight: 8 }}>
+                  <DetailRow label="Date & Time" value={dateTime} />
+                  <DetailRow
+                    label="Location"
+                    value={event.city || event.location}
+                  />
+                  <DetailRow
+                    label="Accessibility"
+                    value="✓ Wheelchair accessible"
+                  />
+                </View>
+                <View style={{ flex: 1, paddingLeft: 8 }}>
+                  <DetailRow label="Venue" value={venue} />
+                  <DetailRow label="Venue Type" value="indoor" />
+                  <DetailRow
+                    label="Organizer"
+                    value="Live Nation Philippines"
+                  />
+                </View>
+              </View>
 
               <TouchableOpacity
-  style={{
-    marginTop: 16,
-    paddingVertical: 10,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: isSaved ? "#007AFF" : "#E5E5EA",
-    alignItems: "center",
-    backgroundColor: isSaved ? "#E5F0FF" : "#fff",
-  }}
-  onPress={() => toggleSave(event)}
->
-  <Text
-    style={{
-      color: isSaved ? "#007AFF" : "#007AFF",
-      fontWeight: "600",
-    }}
-  >
-    {isSaved ? "Saved" : "Save this Venue"}
-  </Text>
-</TouchableOpacity>
+                style={{
+                  marginTop: 16,
+                  paddingVertical: 10,
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  borderColor: isSaved ? "#007AFF" : "#E5E5EA",
+                  alignItems: "center",
+                  backgroundColor: isSaved ? "#E5F0FF" : "#fff",
+                }}
+                onPress={() => toggleSave(event)}
+              >
+                <Text
+                  style={{
+                    color: "#007AFF",
+                    fontWeight: "600",
+                  }}
+                >
+                  {isSaved ? "Saved" : "Save this Venue"}
+                </Text>
+              </TouchableOpacity>
             </Card>
 
             {/* Location + map placeholder */}
             <Card>
-  <Text style={styles.cardTitle}>Location</Text>
+              <Text style={styles.cardTitle}>Location</Text>
 
-  {/* Make the static map clickable */}
-  <TouchableOpacity
-    onPress={openInGoogleMaps}
-    activeOpacity={0.8}
-    style={{
-      height: 220,
-      borderRadius: 16,
-      overflow: "hidden",
-      marginTop: 12,
-    }}
-  >
-    <Image
-      source={require("../../assets/static-map.png")}
-      style={{ width: "100%", height: "100%" }}
-      resizeMode="cover"
-    />
-  </TouchableOpacity>
+              <TouchableOpacity
+                onPress={openInGoogleMaps}
+                activeOpacity={0.8}
+                style={{
+                  height: 220,
+                  borderRadius: 16,
+                  overflow: "hidden",
+                  marginTop: 12,
+                }}
+              >
+                <Image
+                  source={require("../../assets/static-map.png")}
+                  style={{ width: "100%", height: "100%" }}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
 
-  {/* Optional extra button below */}
-  <TouchableOpacity
-    style={{
-      marginTop: 10,
-      alignSelf: "center",
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-    }}
-    onPress={openInGoogleMaps}
-  >
-    <Text style={{ color: "#007AFF", fontWeight: "500" }}>
-      Open in Google Maps
-    </Text>
-  </TouchableOpacity>
-</Card>
+              <TouchableOpacity
+                style={{
+                  marginTop: 10,
+                  alignSelf: "center",
+                  paddingVertical: 8,
+                  paddingHorizontal: 16,
+                }}
+                onPress={openInGoogleMaps}
+              >
+                <Text style={{ color: "#007AFF", fontWeight: "500" }}>
+                  Open in Google Maps
+                </Text>
+              </TouchableOpacity>
+            </Card>
 
             {/* Plan & Essentials */}
             <Card>
@@ -308,10 +364,11 @@ const isSaved = saved.some((e) => e.id === event.id);
                   style={{ marginRight: 6 }}
                 />
                 <SecondaryButton
-                  label="Apple Wallet"
-                  icon=""
+                  label="Purchase Tickets"
+                  icon={Ticket}
                   flex={1}
                   style={{ marginLeft: 6 }}
+                  onPress={handlePurchase}
                 />
               </View>
 
@@ -325,51 +382,46 @@ const isSaved = saved.some((e) => e.id === event.id);
               />
               <InfoStrip
                 title="Travel tips"
-                body="Taguig • AWS Manila Office & Virtual. Expect heavy traffic; plan extra travel time."
+                body="Expect heavy traffic; plan extra travel time."
               />
             </Card>
 
             {/* Tags */}
-            {/* Tags */}
-<Card>
-  <Text style={styles.cardTitle}>Tags</Text>
-  <View
-    style={{
-      flexDirection: "row",
-      flexWrap: "wrap",
-      marginTop: 10,
-    }}
-  >
-    {(event.tags && event.tags.length > 0
-      ? event.tags
-      : [event.category, event.city]
-    ).map((tag) => (
-      <View
-        key={tag}
-        style={{
-          paddingHorizontal: 12,
-          paddingVertical: 6,
-          borderRadius: 999,
-          backgroundColor: "#F2F2F7",
-          marginRight: 8,
-          marginBottom: 8,
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 12,
-            color: "#1C1C1E",
-          }}
-        >
-          {tag}
-        </Text>
-      </View>
-    ))}
-  </View>
-</Card>
+            <Card>
+              <Text style={styles.cardTitle}>Tags</Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  marginTop: 10,
+                }}
+              >
+                {tags.map((tag, index) => (
+                  <View
+                    key={`${tag}-${index}`}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 999,
+                      backgroundColor: "#F2F2F7",
+                      marginRight: 8,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: "#1C1C1E",
+                      }}
+                    >
+                      {tag}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </Card>
 
-
-            {/* Hype Score */}
+            {/* Hype Score (randomized) */}
             <Card>
               <View
                 style={{
@@ -403,7 +455,7 @@ const isSaved = saved.some((e) => e.id === event.id);
               >
                 <View
                   style={{
-                    width: "87%",
+                    width: `${hypeScore}%`,
                     height: "100%",
                     backgroundColor: "#FF3B30",
                   }}
@@ -416,9 +468,12 @@ const isSaved = saved.some((e) => e.id === event.id);
                   justifyContent: "space-between",
                 }}
               >
-                <MetricColumn label="VIEWS" value="2,602" />
-                <MetricColumn label="BUYERS" value="900" />
-                <MetricColumn label="RECENCY" value="88%" />
+                <MetricColumn
+                  label="VIEWS"
+                  value={hypeViews.toLocaleString()}
+                />
+                <MetricColumn label="BUYERS" value={hypeBuyers.toString()} />
+                <MetricColumn label="RECENCY" value={hypeRecency} />
                 <View style={{ alignItems: "flex-end" }}>
                   <Text
                     style={{
@@ -427,7 +482,7 @@ const isSaved = saved.some((e) => e.id === event.id);
                       color: "#1C1C1E",
                     }}
                   >
-                    87
+                    {hypeScore}
                   </Text>
                 </View>
               </View>
@@ -435,85 +490,84 @@ const isSaved = saved.some((e) => e.id === event.id);
           </View>
         </ScrollView>
 
-        <View
-  style={{
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 24,
-    alignItems: "center",
-  }}
->
-  <View
-    style={{
-      width: "100%",
-      maxWidth: 900,
-      paddingHorizontal: 24,
-    }}
-  >
-    <View
-  style={{
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "#fff",
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-  }}
->
-  {tabs.map(({ key, label, icon: Icon, href }) => {
-    const isActive = key === "tickets"; // tickets active on detail
-
-    return (
-      <TouchableOpacity
-        key={key}
-        style={{
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-        activeOpacity={0.8}
-        onPress={() => router.push(href as any)} // cast fixes TS complaint
-      >
+        {/* Bottom nav */}
         <View
           style={{
-            width: 28,
-            height: 28,
-            borderRadius: 999,
-            backgroundColor: isActive ? "#E5F0FF" : "transparent",
-            justifyContent: "center",
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 24,
             alignItems: "center",
-            marginBottom: 4,
           }}
         >
-          <Icon
-            size={18}
-            color={isActive ? "#007AFF" : "#8E8E93"}
-            strokeWidth={isActive ? 2.5 : 2}
-          />
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 900,
+              paddingHorizontal: 24,
+            }}
+          >
+            <View
+              style={{
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: "#fff",
+                flexDirection: "row",
+                justifyContent: "space-around",
+                alignItems: "center",
+                shadowColor: "#000",
+                shadowOpacity: 0.1,
+                shadowRadius: 10,
+                shadowOffset: { width: 0, height: 4 },
+                elevation: 6,
+              }}
+            >
+              {tabs.map(({ key, label, icon: Icon, href }) => {
+                const isActive = key === "tickets";
+
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    style={{
+                      flex: 1,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                    activeOpacity={0.8}
+                    onPress={() => router.push(href as any)}
+                  >
+                    <View
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 999,
+                        backgroundColor: isActive ? "#E5F0FF" : "transparent",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        marginBottom: 4,
+                      }}
+                    >
+                      <Icon
+                        size={18}
+                        color={isActive ? "#007AFF" : "#8E8E93"}
+                        strokeWidth={isActive ? 2.5 : 2}
+                      />
+                    </View>
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        color: isActive ? "#007AFF" : "#8E8E93",
+                        fontWeight: isActive ? "600" : "400",
+                      }}
+                    >
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
         </View>
-        <Text
-          style={{
-            fontSize: 11,
-            color: isActive ? "#007AFF" : "#8E8E93",
-            fontWeight: isActive ? "600" : "400",
-          }}
-        >
-          {label}
-        </Text>
-      </TouchableOpacity>
-    );
-  })}
-</View>
-
-  </View>
-</View>
-
       </View>
     </SafeAreaView>
   );
@@ -615,12 +669,14 @@ const PrimaryButton: React.FC<{
 
 const SecondaryButton: React.FC<{
   label: string;
-  icon?: string;
+  icon?: React.ComponentType<{ size?: number; color?: string }>;
   flex?: number;
   style?: any;
-}> = ({ label, icon, flex = 0, style }) => (
+  onPress?: () => void;
+}> = ({ label, icon: IconComp, flex = 0, style, onPress }) => (
   <View style={[{ flex }, style]}>
     <TouchableOpacity
+      onPress={onPress}
       style={{
         flexDirection: "row",
         alignItems: "center",
@@ -632,10 +688,10 @@ const SecondaryButton: React.FC<{
         backgroundColor: "#fff",
       }}
     >
-      {icon && (
-        <Text style={{ marginRight: 8, fontSize: 14, color: "#1C1C1E" }}>
-          {icon}
-        </Text>
+      {IconComp && (
+        <View style={{ marginRight: 8 }}>
+          <IconComp size={16} color="#1C1C1E" />
+        </View>
       )}
       <Text
         style={{
@@ -709,4 +765,3 @@ const MetricColumn: React.FC<{ label: string; value: string }> = ({
     </Text>
   </View>
 );
-

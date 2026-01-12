@@ -1,5 +1,5 @@
+// app/event/index.tsx (HomeScreen)
 import React from "react";
-
 import {
   View,
   Text,
@@ -13,57 +13,167 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Home, Search, Ticket, User, Heart, QrCode } from "lucide-react-native";
+import { Home, Ticket, Heart } from "lucide-react-native";
 
-import { events, filterEvents } from "../../data/events";
+import { supabase } from "../../lib/supabase";
 
 type TabKey = "home" | "search" | "tickets" | "profile";
 
-
 const tabs = [
-  { key: "home", label: "Home", icon: Home, href: "/" },
-  { key: "saved", label: "Saved", icon: Heart, href: "/saved" },
-  { key: "tickets", label: "Tickets", icon: Ticket, href: "/tickets" },
-  { key: "scan", label: "Scan", icon: QrCode, href: "/scan" },
+  { key: "home" as TabKey, label: "Home", icon: Home, href: "/event" },
+  { key: "saved" as TabKey, label: "Saved", icon: Heart, href: "/saved" },
+  { key: "tickets" as TabKey, label: "Tickets", icon: Ticket, href: "/tickets" },
 ];
 
-
-const coverMap: Record<string, any> = {
-  "/twice.jpg": require("../../assets/twice.jpg"),
-  "/blackpink.jpg": require("../../assets/blackpink.jpg"),
-  "/tyla.jpg": require("../../assets/tyla.jpg"),
-  "/day6.jpg": require("../../assets/day6.jpg"),
-  "/ham.jpg": require("../../assets/ham.jpg"),
-  "/cs.png": require("../../assets/cs.png"),
-  "/cvsu.jpg": require("../../assets/cvsu.jpg"),
-};
+const fallbackImage = require("../../assets/twice.jpg");
 
 const HomeScreen: React.FC = () => {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
 
-  // ---------- state ----------
-  const [search, setSearch] = React.useState("");
-  const [category, setCategory] =
-    React.useState<"all" | "Trending" | "Fan Favorite" | "Chill" | "Niche">(
-      "all"
+  // ---------- auth / user ----------
+  const [session, setSession] = React.useState<any>(null);
+  const [profile, setProfile] = React.useState<{
+    full_name?: string | null;
+    role?: string | null;
+    favorite_city?: string | null;
+  } | null>(null);
+  const [loadingUser, setLoadingUser] = React.useState(true);
+
+  React.useEffect(() => {
+    let mounted = true;
+
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!mounted) return;
+      const currentSession = data.session;
+      setSession(currentSession);
+
+      if (!currentSession?.user) {
+        setLoadingUser(false);
+        router.replace("/(auth)/login");
+        return;
+      }
+
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("full_name, role, favorite_city")
+        .eq("id", currentSession.user.id)
+        .single();
+
+      if (mounted) {
+        setProfile(profileData ?? {});
+        setLoadingUser(false);
+      }
+    };
+
+    init();
+
+    const { data: authSub } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        setSession(newSession);
+        if (!newSession?.user) {
+          router.replace("/(auth)/login");
+        }
+      }
     );
+
+    return () => {
+      mounted = false;
+      authSub?.subscription.unsubscribe();
+    };
+  }, [router]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace("/(auth)/login");
+  };
+
+  const displayName =
+    profile?.full_name ||
+    session?.user?.email?.split("@")[0] ||
+    "Guest";
+
+  const userRole = profile?.role || "buyer";
+
+  // ---------- events from Supabase ----------
+  const [events, setEvents] = React.useState<any[]>([]);
+  const [loadingEvents, setLoadingEvents] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadApprovedEvents = async () => {
+      setLoadingEvents(true);
+
+      const { data, error } = await supabase
+        .from("events")
+        .select(
+          `
+          id,
+          name,
+          date,
+          location,
+          description,
+          featured_images,
+          tier_price,
+          tier_seats
+        `
+        )
+        .eq("status", "approved")
+        .order("date", { ascending: true });
+
+      if (error) {
+        console.error("events load error", error);
+        setEvents([]);
+      } else {
+        setEvents(data || []);
+      }
+      setLoadingEvents(false);
+    };
+
+    loadApprovedEvents();
+  }, []);
+
+  // ---------- filters ----------
+  const [search, setSearch] = React.useState("");
   const [date, setDate] = React.useState<string | null>(null); // "yyyy-mm-dd"
   const [location, setLocation] = React.useState("");
-  const [filtered, setFiltered] = React.useState(events);
   const [showDatePicker, setShowDatePicker] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState<"home" | "search" | "tickets" | "profile">("home");
-  
+  const [activeTab] = React.useState<TabKey>("home");
 
-  // ---------- filtering ----------
-  React.useEffect(() => {
-  const next = filterEvents({ category, search, date: date ?? undefined, location });
-  console.log("filters:", { date, count: next.length });
-  setFiltered(next);
-}, [category, search, date, location]);
+  const effectiveLocation = location || profile?.favorite_city || "";
+  const filtered = events.filter((ev) => {
+    const text = (ev.name || "").toLowerCase();
+    if (search && !text.includes(search.toLowerCase())) return false;
 
-  // ---------- UI ----------
+    if (date) {
+      const evDate = new Date(ev.date).toISOString().slice(0, 10);
+      if (evDate !== date) return false;
+    }
+
+    if (effectiveLocation) {
+      const loc = (ev.location || "").toLowerCase();
+      if (!loc.includes(effectiveLocation.toLowerCase())) return false;
+    }
+
+    return true;
+  });
+
+  if (loadingUser) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#020617",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text style={{ color: "#fff" }}>Loading your dashboard…</Text>
+      </View>
+    );
+  }
+
   return (
     <LinearGradient
       colors={["#020617", "#0b1220", "#ffffff"]}
@@ -90,42 +200,62 @@ const HomeScreen: React.FC = () => {
                 marginBottom: 24,
               }}
             >
-              <View
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 10,
-                  backgroundColor: "rgba(255,255,255,0.18)",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{ color: "#fff", fontWeight: "600", fontSize: 18 }}
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 10,
+                    overflow: "hidden",
+                    backgroundColor: "transparent",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    marginRight: 8,
+                  }}
                 >
-                  h
-                </Text>
+                  <Image
+                    source={require("../../assets/hype1.png")}
+                    style={{ width: 32, height: 32, resizeMode: "contain" }}
+                  />
+                </View>
+
+                <View>
+                  <Text
+                    style={{
+                      color: "#9CA3AF",
+                      fontSize: 11,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {userRole === "admin" ? "Admin" : "Buyer"}
+                  </Text>
+                  <Text
+                    style={{
+                      color: "#fff",
+                      fontSize: 14,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {displayName}
+                  </Text>
+                </View>
               </View>
 
               <TouchableOpacity
-              style={{
-                paddingHorizontal: 18,
-                paddingVertical: 8,
-                borderRadius: 999,
-                backgroundColor: "rgba(255,255,255,0.16)",
-              }}
-              onPress={() => {
-                // optionally clear auth/session here, then:
-                router.replace("/(auth)/login"); // or "/login" if that is your path
-              }}
-            >
-              <Text
-                style={{ color: "#fff", fontWeight: "600", fontSize: 14 }}
+                style={{
+                  paddingHorizontal: 18,
+                  paddingVertical: 8,
+                  borderRadius: 999,
+                  backgroundColor: "rgba(255,255,255,0.16)",
+                }}
+                onPress={handleLogout}
               >
-                Log out
-              </Text>
-            </TouchableOpacity>
-
+                <Text
+                  style={{ color: "#fff", fontWeight: "600", fontSize: 14 }}
+                >
+                  Log out
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {/* Title */}
@@ -144,7 +274,7 @@ const HomeScreen: React.FC = () => {
                   textAlign: "center",
                 }}
               >
-                hype
+                Hype
               </Text>
               <Text
                 style={{
@@ -154,8 +284,20 @@ const HomeScreen: React.FC = () => {
                   textAlign: "center",
                 }}
               >
-                Second-hand tickets, zero second thoughts.
+                Turn every ticket into a sold-out moment.
               </Text>
+              {profile?.favorite_city && (
+                <Text
+                  style={{
+                    marginTop: 4,
+                    color: "#A5B4FC",
+                    fontSize: 12,
+                    textAlign: "center",
+                  }}
+                >
+                  Showing events near {profile.favorite_city}.
+                </Text>
+              )}
             </View>
 
             {/* Search card */}
@@ -192,8 +334,8 @@ const HomeScreen: React.FC = () => {
                 />
               </View>
 
-              {/* category (simple toggle for now) */}
-              <TouchableOpacity
+              {/* static category label */}
+              <View
                 style={{
                   backgroundColor: "#fff",
                   borderRadius: 999,
@@ -206,17 +348,12 @@ const HomeScreen: React.FC = () => {
                   justifyContent: "space-between",
                   alignItems: "center",
                 }}
-                onPress={() =>
-                  setCategory((prev) =>
-                    prev === "all" ? "Trending" : "all"
-                  )
-                }
               >
                 <Text style={{ fontSize: 14, color: "#3C3C43" }}>
-                  {category === "all" ? "All Categories" : category}
+                  All events
                 </Text>
                 <Text style={{ fontSize: 14, color: "#3C3C43" }}>˅</Text>
-              </TouchableOpacity>
+              </View>
 
               {/* date */}
               <View
@@ -264,7 +401,11 @@ const HomeScreen: React.FC = () => {
                 }}
               >
                 <TextInput
-                  placeholder="Location..."
+                  placeholder={
+                    profile?.favorite_city
+                      ? `Location... (e.g. ${profile.favorite_city})`
+                      : "Location..."
+                  }
                   placeholderTextColor="#8E8E93"
                   value={location}
                   onChangeText={setLocation}
@@ -274,167 +415,150 @@ const HomeScreen: React.FC = () => {
             </View>
 
             {/* Event cards */}
-<View style={{ marginTop: 12 }}>
-  {filtered.map((event) => (
-    <TouchableOpacity
-      key={event.id}
-      activeOpacity={0.9}
-      onPress={() =>
-        router.push({ pathname: "/event/[id]", params: { id: event.id } })
-      }
-      style={{
-        backgroundColor: "#ffffff",
-        borderRadius: 24,
-        overflow: "hidden",
-        marginBottom: 16,
-        width: "100%",
-        shadowColor: "#000",
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 4,
-      }}
-    >
-      <View style={{ height: 210 }}>
-        <Image
-  source={
-    coverMap[event.cover] ??
-    (event.cover.startsWith("http")
-      ? { uri: event.cover }
-      : coverMap["/twice.jpg"])
-  }
-  style={{ width: "100%", height: "100%" }}
-  resizeMode="cover"
-/>
+            <View style={{ marginTop: 12 }}>
+              {loadingEvents ? (
+                <Text
+                  style={{
+                    color: "#E5E7EB",
+                    fontSize: 14,
+                    textAlign: "center",
+                    marginTop: 16,
+                  }}
+                >
+                  Loading events…
+                </Text>
+              ) : filtered.length === 0 ? (
+                <Text
+                  style={{
+                    color: "#E5E7EB",
+                    fontSize: 14,
+                    textAlign: "center",
+                    marginTop: 16,
+                  }}
+                >
+                  No events available yet.
+                </Text>
+              ) : (
+                filtered.map((event) => {
+                  const featured =
+                    Array.isArray(event.featured_images) &&
+                    event.featured_images.length > 0
+                      ? { uri: event.featured_images[0] as string }
+                      : undefined;
 
+                  const coverSource = featured ?? fallbackImage;
 
-        <View
-          style={{
-            position: "absolute",
-            top: 12,
-            right: 12,
-            backgroundColor: "rgba(0,0,0,0.72)",
-            borderRadius: 10,
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-            alignItems: "center",
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 9,
-              textTransform: "uppercase",
-              color: "rgba(255,255,255,0.8)",
-              marginBottom: 2,
-            }}
-          >
-            {event.category === "Fan Favorite" ? "Fan Favorite" : "Trending"}
-          </Text>
-          <Text
-            style={{
-              color: "#fff",
-              fontWeight: "700",
-              fontSize: 14,
-            }}
-          >
-            {event.hypeScore}
-          </Text>
-        </View>
+                  return (
+                    <TouchableOpacity
+                      key={event.id}
+                      activeOpacity={0.9}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/event/[id]",
+                          params: { id: event.id },
+                        } as any)
+                      }
+                      style={{
+                        backgroundColor: "#ffffff",
+                        borderRadius: 24,
+                        overflow: "hidden",
+                        marginBottom: 16,
+                        width: "100%",
+                        shadowColor: "#000",
+                        shadowOpacity: 0.08,
+                        shadowRadius: 12,
+                        shadowOffset: { width: 0, height: 4 },
+                        elevation: 4,
+                      }}
+                    >
+                      <View style={{ height: 210 }}>
+                        <Image
+                          source={coverSource}
+                          style={{ width: "100%", height: "100%" }}
+                          resizeMode="cover"
+                        />
 
-        <View
-          style={{
-            position: "absolute",
-            left: 16,
-            bottom: 16,
-            right: 16,
-          }}
-        >
-          <Text
-            numberOfLines={2}
-            style={{
-              color: "#fff",
-              fontSize: 18,
-              fontWeight: "700",
-            }}
-          >
-            {event.title}
-          </Text>
-        </View>
-      </View>
+                        {/* simple pill, no hypeScore */}
+                        <View
+                          style={{
+                            position: "absolute",
+                            top: 12,
+                            right: 12,
+                            backgroundColor: "rgba(0,0,0,0.72)",
+                            borderRadius: 10,
+                            paddingHorizontal: 10,
+                            paddingVertical: 6,
+                            alignItems: "center",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 9,
+                              textTransform: "uppercase",
+                              color: "rgba(255,255,255,0.8)",
+                            }}
+                          >
+                            Featured
+                          </Text>
+                        </View>
 
-      <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-        <Text
-          style={{
-            fontSize: 12,
-            color: "#3C3C43",
-            marginBottom: 4,
-          }}
-        >
-          {event.city} ·{" "}
-          {new Date(event.startTime).toLocaleString("en-PH", {
-            weekday: "short",
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-          })}
-        </Text>
+                        <View
+                          style={{
+                            position: "absolute",
+                            left: 16,
+                            bottom: 16,
+                            right: 16,
+                          }}
+                        >
+                          <Text
+                            numberOfLines={2}
+                            style={{
+                              color: "#fff",
+                              fontSize: 18,
+                              fontWeight: "700",
+                            }}
+                          >
+                            {event.name}
+                          </Text>
+                        </View>
+                      </View>
 
-        <Text
-          style={{
-            fontSize: 15,
-            fontWeight: "600",
-            color: "#000",
-            marginBottom: 4,
-          }}
-        >
-          {event.venue}
-        </Text>
+                      <View
+                        style={{ paddingHorizontal: 16, paddingVertical: 12 }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: "#3C3C43",
+                            marginBottom: 4,
+                          }}
+                        >
+                          {event.location} ·{" "}
+                          {new Date(event.date).toLocaleString("en-PH", {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </Text>
 
-        <Text
-          style={{
-            fontSize: 12,
-            color: "rgba(60,60,67,0.6)",
-            marginBottom: 8,
-          }}
-          numberOfLines={1}
-        >
-          {event.tags.join(" · ")}
-        </Text>
-
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "flex-end",
-            alignItems: "center",
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 20,
-              color: "rgba(60,60,67,0.8)",
-              textTransform: "uppercase",
-              marginRight: 4,
-              textAlign: "right",
-            }}
-          >
-            From{" "}
-            <Text
-              style={{
-                fontSize: 20,
-                fontWeight: "700",
-                color: "#007AFF",
-              }}
-            >
-              {event.tiers[0].currency}{" "}
-              {event.tiers[0].price.toLocaleString("en-PH")}
-            </Text>
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  ))}
-</View>
+                        <Text
+                          style={{
+                            fontSize: 15,
+                            fontWeight: "600",
+                            color: "#000",
+                            marginBottom: 4,
+                          }}
+                        >
+                          {event.location}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </View>
           </View>
         </ScrollView>
 
@@ -455,84 +579,83 @@ const HomeScreen: React.FC = () => {
           />
         )}
 
-        
-
         {/* Bottom tab bar */}
-<View
-  style={{
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 24,
-    alignItems: "center",
-  }}
->
-  <View
-    style={{
-      width: "100%",
-      maxWidth: 900,
-      paddingHorizontal: isWide ? 48 : 24,
-    }}
-  >
-    <View
-      style={{
-        height: 64,
-        borderRadius: 32,
-        backgroundColor: "#fff",
-        flexDirection: "row",
-        justifyContent: "space-around",
-        alignItems: "center",
-        shadowColor: "#000",
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 6,
-      }}
-    >
-      {tabs.map(({ key, label, icon: Icon, href }) => {
-  const isActive = key === "home"; // home active on index
+        <View
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 24,
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 900,
+              paddingHorizontal: isWide ? 48 : 24,
+            }}
+          >
+            <View
+              style={{
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: "#fff",
+                flexDirection: "row",
+                justifyContent: "space-around",
+                alignItems: "center",
+                shadowColor: "#000",
+                shadowOpacity: 0.1,
+                shadowRadius: 10,
+                shadowOffset: { width: 0, height: 4 },
+                elevation: 6,
+              }}
+            >
+              {tabs.map(({ key, label, icon: Icon, href }) => {
+                const isActive = key === activeTab;
 
-  return (
-    <TouchableOpacity
-      key={key}
-      style={{
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-      activeOpacity={0.8}
-      onPress={() => router.push(href as any)} // ← add `as any` or `as Href`
-    >
-      <View
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: 999,
-          backgroundColor: isActive ? "#E5F0FF" : "transparent",
-          justifyContent: "center",
-          alignItems: "center",
-          marginBottom: 4,
-        }}
-      >
-        <Icon
-          size={18}
-          color={isActive ? "#007AFF" : "#8E8E93"}
-          strokeWidth={isActive ? 2.5 : 2}
-        />
-      </View>
-      <Text
-        style={{
-          fontSize: 11,
-          color: isActive ? "#007AFF" : "#8E8E93",
-          fontWeight: isActive ? "600" : "400",
-        }}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-})}
-
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    style={{
+                      flex: 1,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      if (!isActive) router.push(href as any);
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 999,
+                        backgroundColor: isActive ? "#E5F0FF" : "transparent",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        marginBottom: 4,
+                      }}
+                    >
+                      <Icon
+                        size={18}
+                        color={isActive ? "#007AFF" : "#8E8E93"}
+                        strokeWidth={isActive ? 2.5 : 2}
+                      />
+                    </View>
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        color: isActive ? "#007AFF" : "#8E8E93",
+                        fontWeight: isActive ? "600" : "400",
+                      }}
+                    >
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
         </View>

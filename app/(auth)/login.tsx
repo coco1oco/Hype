@@ -198,8 +198,8 @@ export default function LoginScreen() {
 
   };
 
-  // LOGIN — FIXED: do nothing if any sign-up modal is open
-  const handleLogin = async () => {
+  // LOGIN — route buyer vs organizer, block admin
+const handleLogin = async () => {
   if (showSignUp || showOrganizerModal) return;
 
   setErrorMsg(null);
@@ -224,10 +224,9 @@ export default function LoginScreen() {
 
   const user = data.user;
 
-  // ❌ block admin account here
+  // block admin on this screen
   const isAdminEmail = user?.email === "admin@hype.test";
   const isAdminRole = user?.user_metadata?.role === "Admin";
-
   if (isAdminEmail || isAdminRole) {
     setErrorMsg("Use the Admin sign in screen for this account.");
     setLoading(false);
@@ -235,10 +234,19 @@ export default function LoginScreen() {
     return;
   }
 
-  // normal user / organizer flow
+  // role from auth metadata (set during sign up)
+  const role = (user?.user_metadata as any)?.role ?? null;
+
+if (role === "Organizer") {
+  router.replace("/organizer/organizerDashboard" as any);
+} else {
   router.replace("/event");
+}
+
+
   setLoading(false);
 };
+
 
 
 
