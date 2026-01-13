@@ -1,8 +1,19 @@
 // app/(auth)/admin-login.tsx
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, SafeAreaView } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
+import { ArrowRight, Lock, Mail } from "lucide-react-native";
+import React, { useState } from "react";
+import {
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { supabase } from "../../lib/supabase";
 
 export default function AdminLoginScreen() {
@@ -12,170 +23,265 @@ export default function AdminLoginScreen() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-const ADMIN_EMAIL = "admin@hype.test";
-
-
-const handleAdminLogin = async () => {
-  setErrorMsg(null);
-  setLoading(true);
-
-  if (!email || !password) {
-    setErrorMsg("Enter admin email and password.");
-    setLoading(false);
-    return;
-  }
-
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
+  const backgroundSource = require("../../assets/hype2.jpg");
+  const backgroundBlurRadius = Platform.select({
+    ios: 28,
+    android: 18,
+    default: 24,
   });
 
-  if (error) {
-    setErrorMsg("Invalid credentials.");
+  const ADMIN_EMAIL = "admin@hype.test";
+
+  const handleAdminLogin = async () => {
+    setErrorMsg(null);
+    setLoading(true);
+
+    if (!email || !password) {
+      setErrorMsg("Enter admin email and password.");
+      setLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setErrorMsg("Invalid credentials.");
+      setLoading(false);
+      return;
+    }
+
+    const user = data.user;
+
+    // lock down to the one admin account + role check
+    if (user?.email !== ADMIN_EMAIL || user.user_metadata?.role !== "Admin") {
+      setErrorMsg("You are not authorized as admin.");
+      setLoading(false);
+      await supabase.auth.signOut();
+      return;
+    }
+
     setLoading(false);
-    return;
-  }
-
-  const user = data.user;
-
-  // lock down to the one admin account + role check
-  if (user?.email !== ADMIN_EMAIL || user.user_metadata?.role !== "Admin") {
-    setErrorMsg("You are not authorized as admin.");
-    setLoading(false);
-    await supabase.auth.signOut();
-    return;
-  }
-
-  setLoading(false);
-  router.replace("/admin" as any);
-};
-  
-
-  
+    router.replace("/admin" as any);
+  };
 
   return (
-    <LinearGradient
-      colors={["#020617", "#0b1220", "#ffffff"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={{ flex: 1 }}
-    >
-      <SafeAreaView style={{ flex: 1, padding: 24, justifyContent: "center" }}>
-        <Text
-          style={{
-            fontSize: 28,
-            fontWeight: "800",
-            color: "#fff",
-            marginBottom: 24,
-            textAlign: "center",
-          }}
-        >
-          Admin Login
-        </Text>
+    <View style={styles.screen}>
+      <Image
+        source={backgroundSource}
+        style={StyleSheet.absoluteFillObject}
+        resizeMode="cover"
+        blurRadius={backgroundBlurRadius}
+      />
+      <View style={styles.backdrop} />
 
-        <View
-          style={{
-            backgroundColor: "#F9FAFB",
-            borderRadius: 22,
-            padding: 18,
-          }}
+      <SafeAreaView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          style={styles.content}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          <Text style={{ fontSize: 13, color: "#4B5563", marginBottom: 4 }}>
-            Email
-          </Text>
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: "#E5E7EB",
-              borderRadius: 999,
-              paddingHorizontal: 16,
-              paddingVertical: 9,
-              marginBottom: 10,
-              backgroundColor: "#ffffff",
-            }}
-          >
-            <TextInput
-              placeholder="Email"
-              placeholderTextColor="#9CA3AF"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={{ fontSize: 14, color: "#111827" }}
+          <View style={styles.brandHeader}>
+            <Image
+              source={require("../../assets/hype1.png")}
+              style={styles.brandMark}
+              resizeMode="contain"
             />
+            <Text style={styles.brandTitle}>HYPE</Text>
+            <Text style={styles.brandSubtitle}>ADMIN — SIGN IN</Text>
           </View>
 
-          <Text style={{ fontSize: 13, color: "#4B5563", marginBottom: 4 }}>
-            Password
-          </Text>
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: "#E5E7EB",
-              borderRadius: 999,
-              paddingHorizontal: 16,
-              paddingVertical: 9,
-              marginBottom: 10,
-              backgroundColor: "#ffffff",
-            }}
-          >
-            <TextInput
-              placeholder="Enter password"
-              placeholderTextColor="#9CA3AF"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              style={{ fontSize: 14, color: "#111827" }}
-            />
-          </View>
+          <BlurView intensity={26} tint="light" style={styles.card}>
+            <View style={styles.cardInner}>
+              <Text style={styles.cardTitle}>ADMIN ACCESS</Text>
 
-          {errorMsg && (
-            <Text
-              style={{
-                color: "#DC2626",
-                fontSize: 12,
-                marginBottom: 8,
-                textAlign: "center",
-              }}
-            >
-              {errorMsg}
-            </Text>
-          )}
+              <Text style={styles.label}>EMAIL</Text>
+              <BlurView intensity={18} tint="light" style={styles.glassField}>
+                <View style={styles.fieldRow}>
+                  <Mail size={18} color={stylesVars.icon} />
+                  <TextInput
+                    placeholder="admin@hype.test"
+                    placeholderTextColor={stylesVars.placeholder}
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    style={styles.textInput}
+                  />
+                </View>
+              </BlurView>
 
-          <TouchableOpacity
-            onPress={handleAdminLogin}
-            activeOpacity={0.9}
-            style={{
-              height: 44,
-              borderRadius: 999,
-              backgroundColor: "#2563EB",
-              alignItems: "center",
-              justifyContent: "center",
-              marginTop: 4,
-            }}
-            disabled={loading}
-          >
-            <Text
-              style={{
-                color: "#ffffff",
-                fontWeight: "600",
-                fontSize: 15,
-              }}
-            >
-              {loading ? "Signing in..." : "Sign In as Admin"}
-            </Text>
-          </TouchableOpacity>
-        </View>
+              <Text style={styles.label}>PASSWORD</Text>
+              <BlurView intensity={18} tint="light" style={styles.glassField}>
+                <View style={styles.fieldRow}>
+                  <Lock size={18} color={stylesVars.icon} />
+                  <TextInput
+                    placeholder="Enter password"
+                    placeholderTextColor={stylesVars.placeholder}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    style={styles.textInput}
+                  />
+                </View>
+              </BlurView>
 
-        <TouchableOpacity
-          style={{ marginTop: 16, alignItems: "center" }}
-          onPress={() => router.replace("/(auth)/login")}
-        >
-          <Text style={{ color: "#9CA3AF", fontSize: 12 }}>
-            Back to user login
-          </Text>
-        </TouchableOpacity>
+              {errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
+
+              <TouchableOpacity
+                onPress={handleAdminLogin}
+                activeOpacity={0.9}
+                style={[
+                  styles.primaryButton,
+                  loading ? { opacity: 0.7 } : null,
+                ]}
+                disabled={loading}
+              >
+                <View style={styles.primaryButtonRow}>
+                  <Text style={styles.primaryButtonText}>
+                    {loading ? "Signing in..." : "Continue"}
+                  </Text>
+                  <ArrowRight size={18} color="#fff" />
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{ alignItems: "center", marginTop: 10 }}
+                onPress={() => router.replace("/(auth)/login")}
+              >
+                <Text style={styles.backLink}>Back to user login</Text>
+              </TouchableOpacity>
+            </View>
+          </BlurView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
+
+const stylesVars = {
+  placeholder: "rgba(17, 24, 39, 0.38)",
+  icon: "rgba(17, 24, 39, 0.58)",
+};
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#ffffff",
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.72)",
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 24,
+    justifyContent: "center",
+  },
+  brandHeader: {
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  brandMark: {
+    width: 120,
+    height: 120,
+    marginBottom: 4,
+    opacity: 0.95,
+  },
+  brandTitle: {
+    fontSize: 44,
+    letterSpacing: 1,
+    color: "#0B0F1A",
+    textTransform: "uppercase",
+    fontFamily: "BebasNeue",
+    lineHeight: 44,
+  },
+  brandSubtitle: {
+    marginTop: 2,
+    color: "rgba(17,24,39,0.55)",
+    fontSize: 12,
+    textAlign: "center",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
+  card: {
+    borderRadius: 26,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.7)",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 30,
+    shadowOffset: { width: 0, height: 18 },
+    elevation: 10,
+  },
+  cardInner: {
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+    backgroundColor: "rgba(255,255,255,0.35)",
+  },
+  cardTitle: {
+    fontSize: 18,
+    letterSpacing: 1,
+    color: "#0B0F1A",
+    textTransform: "uppercase",
+    fontFamily: "BebasNeue",
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 11,
+    letterSpacing: 1,
+    color: "rgba(17,24,39,0.55)",
+    marginBottom: 6,
+    textTransform: "uppercase",
+  },
+  glassField: {
+    borderRadius: 999,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.65)",
+    backgroundColor: "rgba(255,255,255,0.22)",
+    marginBottom: 10,
+  },
+  fieldRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 14,
+    color: "#0B0F1A",
+  },
+  errorText: {
+    color: "#B91C1C",
+    fontSize: 12,
+    marginBottom: 10,
+  },
+  primaryButton: {
+    height: 48,
+    borderRadius: 999,
+    backgroundColor: "#0B0F1A",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
+  },
+  primaryButtonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  primaryButtonText: {
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 15,
+    letterSpacing: 0.2,
+  },
+  backLink: {
+    color: "rgba(17,24,39,0.55)",
+    fontSize: 12,
+  },
+});

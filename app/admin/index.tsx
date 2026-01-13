@@ -1,17 +1,17 @@
 // app/admin/index.tsx
 import { supabase } from "@/lib/supabase";
+import { LinearGradient } from "expo-linear-gradient";
+import { ShieldCheck, Ticket, Users } from "lucide-react-native";
 import React from "react";
 import {
-  SafeAreaView,
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Image,
   Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Users, Ticket, DollarSign, ShieldCheck } from "lucide-react-native";
 
 const AdminDashboardScreen: React.FC = () => {
   const [pendingEvents, setPendingEvents] = React.useState<any[]>([]);

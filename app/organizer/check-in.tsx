@@ -1,18 +1,18 @@
 // app/organizer/check-in.tsx
+import { supabase } from "@/lib/supabase";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { ArrowLeft, Camera, QrCode } from "lucide-react-native";
 import React from "react";
 import {
-  SafeAreaView,
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
   Alert,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
-import { ArrowLeft, QrCode, Camera, CheckCircle2 } from "lucide-react-native";
-import { supabase } from "@/lib/supabase";
 
 const CheckInScreen: React.FC = () => {
   const router = useRouter();
@@ -51,10 +51,7 @@ const CheckInScreen: React.FC = () => {
       }
 
       if (!data) {
-        Alert.alert(
-          "Check-in",
-          "Ticket not found or already checked in."
-        );
+        Alert.alert("Check-in", "Ticket not found or already checked in.");
         return;
       }
 
@@ -124,8 +121,6 @@ const CheckInScreen: React.FC = () => {
             >
               Check-In Scanner
             </Text>
-
-            
 
             <View
               style={{
@@ -331,7 +326,6 @@ const CheckInScreen: React.FC = () => {
               Use this if QR scanning is not available.
             </Text>
           </View>
-
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>

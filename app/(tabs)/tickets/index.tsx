@@ -1,34 +1,48 @@
-// app/tickets/index.tsx
+// app/(tabs)/tickets/index.tsx
+import { supabase } from "@/lib/supabase";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useIsFocused } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import React from "react";
 import {
   SafeAreaView,
-  View,
-  Text,
   ScrollView,
+  Text,
   TouchableOpacity,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { supabase } from "@/lib/supabase";
 import QRCode from "react-native-qrcode-svg";
-import { Home, Heart, Ticket as TicketIcon } from "lucide-react-native";
-
-type Tab = {
-  key: "home" | "saved" | "tickets";
-  label: string;
-  icon: React.ComponentType<any>;
-  href: string;
-};
-
-const tabs: Tab[] = [
-  { key: "home", label: "Home", icon: Home, href: "/event" },
-  { key: "saved", label: "Saved", icon: Heart, href: "/saved" },
-  { key: "tickets", label: "Tickets", icon: TicketIcon, href: "/tickets" },
-];
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 const TicketsScreen: React.FC = () => {
   const router = useRouter();
+  const tabBarHeight = useBottomTabBarHeight();
+
   const [loading, setLoading] = React.useState(true);
   const [tickets, setTickets] = React.useState<any[]>([]);
+
+  // Focus animation
+  const isFocused = useIsFocused();
+  const focusProgress = useSharedValue(0);
+
+  React.useEffect(() => {
+    focusProgress.value = withTiming(isFocused ? 1 : 0, {
+      duration: isFocused ? 280 : 140,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [isFocused, focusProgress]);
+
+  const focusStyle = useAnimatedStyle(() => {
+    return {
+      opacity: focusProgress.value,
+      transform: [{ translateY: (1 - focusProgress.value) * 8 }],
+    };
+  });
 
   React.useEffect(() => {
     const load = async () => {
@@ -79,12 +93,15 @@ const TicketsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#020617" }}>
-      <View style={{ flex: 1 }}>
+      <Animated.View style={[{ flex: 1 }, focusStyle]}>
         <ScrollView
           contentContainerStyle={{
             paddingHorizontal: 16,
             paddingTop: 16,
-            paddingBottom: 120, // leave space for navbar
+            paddingBottom: tabBarHeight + 32,
+            maxWidth: 900,
+            alignSelf: "center",
+            width: "100%",
           }}
         >
           <Text
@@ -100,7 +117,7 @@ const TicketsScreen: React.FC = () => {
           <Text
             style={{
               fontSize: 13,
-              color: "#6B7280",
+              color: "#94A3B8",
               marginBottom: 16,
             }}
           >
@@ -128,13 +145,13 @@ const TicketsScreen: React.FC = () => {
                 <View
                   key={t.id}
                   style={{
-                    backgroundColor: "#020617",
+                    backgroundColor: "#0B1220",
                     borderRadius: 20,
                     marginBottom: 16,
                     borderWidth: 1,
-                    borderColor: "rgba(148,163,184,0.45)",
+                    borderColor: "rgba(148,163,184,0.35)",
                     shadowColor: "#000",
-                    shadowOpacity: 0.25,
+                    shadowOpacity: 0.22,
                     shadowRadius: 12,
                     shadowOffset: { width: 0, height: 6 },
                     overflow: "hidden",
@@ -146,13 +163,13 @@ const TicketsScreen: React.FC = () => {
                       paddingHorizontal: 14,
                       paddingTop: 12,
                       paddingBottom: 10,
-                      backgroundColor: "#E5E7EB",
+                      backgroundColor: "#111827",
                     }}
                   >
                     <Text
                       style={{
                         fontSize: 11,
-                        color: "#9CA3AF",
+                        color: "#94A3B8",
                         textTransform: "uppercase",
                         letterSpacing: 0.6,
                         marginBottom: 2,
@@ -172,7 +189,7 @@ const TicketsScreen: React.FC = () => {
                       <Text
                         style={{
                           fontSize: 11,
-                          color: "#6B7280",
+                          color: "#64748B",
                           marginTop: 2,
                         }}
                       >
@@ -181,22 +198,14 @@ const TicketsScreen: React.FC = () => {
                     )}
                   </View>
 
-                  {/* separator */}
-                  <View
-                    style={{
-                      height: 1,
-                      backgroundColor: "rgba(31,41,55,0.9)",
-                      marginHorizontal: 12,
-                    }}
-                  />
-
                   {/* middle: QR + details */}
                   <View
                     style={{
                       flexDirection: "row",
-                      backgroundColor: "#E5E7EB",
+                      backgroundColor: "#0B1220",
                       paddingHorizontal: 14,
-                      paddingVertical: 10,
+                      paddingVertical: 12,
+                      gap: 12,
                     }}
                   >
                     {/* QR side */}
@@ -213,6 +222,8 @@ const TicketsScreen: React.FC = () => {
                           padding: 6,
                           borderRadius: 16,
                           backgroundColor: "#0F172A",
+                          borderWidth: 1,
+                          borderColor: "rgba(148,163,184,0.25)",
                         }}
                       >
                         <QRCode value={t.id} size={120} />
@@ -221,7 +232,7 @@ const TicketsScreen: React.FC = () => {
                         style={{
                           marginTop: 6,
                           fontSize: 11,
-                          color: "#9CA3AF",
+                          color: "#94A3B8",
                         }}
                       >
                         Show this code at entry
@@ -232,7 +243,6 @@ const TicketsScreen: React.FC = () => {
                     <View
                       style={{
                         flex: 1,
-                        paddingLeft: 12,
                         justifyContent: "center",
                       }}
                     >
@@ -240,7 +250,7 @@ const TicketsScreen: React.FC = () => {
                         style={{
                           fontSize: 12,
                           color: "#E5E7EB",
-                          marginBottom: 2,
+                          marginBottom: 6,
                         }}
                       >
                         {t.quantity ?? 1} ticket
@@ -250,7 +260,7 @@ const TicketsScreen: React.FC = () => {
                       <Text
                         style={{
                           fontSize: 12,
-                          color: "#9CA3AF",
+                          color: "#94A3B8",
                           marginBottom: 2,
                         }}
                       >
@@ -259,7 +269,7 @@ const TicketsScreen: React.FC = () => {
                       <Text
                         style={{
                           fontSize: 11,
-                          color: "#6B7280",
+                          color: "#64748B",
                           marginTop: 4,
                         }}
                       >
@@ -268,137 +278,35 @@ const TicketsScreen: React.FC = () => {
                           {t.status}
                         </Text>
                       </Text>
-                    </View>
-                  </View>
 
-                  {/* bottom strip */}
-                  <View
-                    style={{
-                      backgroundColor: "#E5E7EB",
-                      borderTopWidth: 1,
-                      borderTopColor: "rgba(31,41,55,0.9)",
-                      paddingHorizontal: 14,
-                      paddingVertical: 8,
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 11,
-                        color: "#6B7280",
-                      }}
-                    >
-                      Event ID: {t.event_id}
-                    </Text>
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/event/[id]",
-                          params: { id: t.event_id },
-                        } as any)
-                      }
-                    >
-                      <Text
-                        style={{
-                          fontSize: 11,
-                          color: "#60A5FA",
-                          fontWeight: "600",
-                        }}
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        style={{ marginTop: 10 }}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/(tabs)/event/[id]",
+                            params: { id: String(t.event_id) },
+                          })
+                        }
                       >
-                        View event →
-                      </Text>
-                    </TouchableOpacity>
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: "#60A5FA",
+                            fontWeight: "600",
+                          }}
+                        >
+                          View event →
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
               );
             })
           )}
         </ScrollView>
-
-        {/* Bottom nav (same style as event details, tickets active) */}
-        <View
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 24,
-            alignItems: "center",
-          }}
-        >
-          <View
-            style={{
-              width: "100%",
-              maxWidth: 900,
-              paddingHorizontal: 24,
-            }}
-          >
-            <View
-              style={{
-                height: 64,
-                borderRadius: 32,
-                backgroundColor: "#fff",
-                flexDirection: "row",
-                justifyContent: "space-around",
-                alignItems: "center",
-                shadowColor: "#000",
-                shadowOpacity: 0.1,
-                shadowRadius: 10,
-                shadowOffset: { width: 0, height: 4 },
-                elevation: 6,
-              }}
-            >
-              {tabs.map(({ key, label, icon: Icon, href }) => {
-                const isActive = key === "tickets";
-
-                return (
-                  <TouchableOpacity
-                    key={key}
-                    style={{
-                      flex: 1,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      if (!isActive) router.push(href as any);
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 999,
-                        backgroundColor: isActive ? "#E5F0FF" : "transparent",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        marginBottom: 4,
-                      }}
-                    >
-                      <Icon
-                        size={18}
-                        color={isActive ? "#007AFF" : "#8E8E93"}
-                        strokeWidth={isActive ? 2.5 : 2}
-                      />
-                    </View>
-                    <Text
-                      style={{
-                        fontSize: 11,
-                        color: isActive ? "#007AFF" : "#8E8E93",
-                        fontWeight: isActive ? "600" : "400",
-                      }}
-                    >
-                      {label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        </View>
-      </View>
+      </Animated.View>
     </SafeAreaView>
   );
 };
