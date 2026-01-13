@@ -1,13 +1,16 @@
 // app/(tabs)/saved.tsx
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useIsFocused } from "@react-navigation/native";
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { Calendar, MapPin } from "lucide-react-native";
+import { Heart } from "lucide-react-native";
 import React from "react";
 import {
+  FlatList,
   Image,
   SafeAreaView,
-  ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
   useWindowDimensions,
@@ -28,6 +31,28 @@ function toText(value: unknown) {
   return String(value ?? "").trim();
 }
 
+function formatPHP(amount: number) {
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return `₱${amount.toLocaleString("en-PH")}`;
+}
+
+function getPriceLabel(item: any) {
+  const raw = item?.tier_price ?? item?.price;
+  if (Array.isArray(raw)) {
+    const nums = raw.map((v) => Number(v)).filter((n) => Number.isFinite(n));
+    if (!nums.length) return null;
+    const min = Math.min(...nums);
+    const max = Math.max(...nums);
+    if (min === max) return formatPHP(min);
+    const a = formatPHP(min);
+    const b = formatPHP(max);
+    return a && b ? `${a}–${b}` : null;
+  }
+
+  const num = Number(raw);
+  return formatPHP(num);
+}
+
 function getSavedTitle(item: any) {
   return (
     toText(item?.name) ||
@@ -35,29 +60,6 @@ function getSavedTitle(item: any) {
     toText(item?.event_name) ||
     "Saved event"
   );
-}
-
-function getSavedLocationLine(item: any) {
-  const location = toText(item?.location);
-  const venue = toText(item?.venue);
-  const city = toText(item?.city);
-
-  if (location) return location;
-  if (venue && city) return `${venue}, ${city}`;
-  return venue || city || "Location TBA";
-}
-
-function getSavedDateLine(item: any) {
-  const raw = item?.date ?? item?.start_time ?? item?.created_at;
-  const d = new Date(String(raw ?? ""));
-  if (Number.isNaN(d.getTime())) return "Date TBA";
-  return d.toLocaleString("en-PH", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 function getSavedImageSource(item: any) {
@@ -101,255 +103,214 @@ export default function SavedScreen() {
     };
   });
 
+  const maxContentWidth = Math.min(width, 900);
+  const contentPadding = 16;
+  const gridGap = 14;
+  const columns = 2;
+  const cardWidth =
+    (maxContentWidth - contentPadding * 2 - gridGap * (columns - 1)) / columns;
+  const cardHeight = isWide ? 310 : 280;
+  const imageHeight = Math.round(cardHeight * 0.7);
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F5F5F7" }}>
-      <Animated.View style={[{ flex: 1 }, focusStyle]}>
-        <ScrollView
-          contentContainerStyle={{
-            paddingHorizontal: 16,
-            paddingTop: 24,
-            paddingBottom: tabBarHeight + 32,
-            maxWidth: 900,
-            alignSelf: "center",
-            width: "100%",
-          }}
-        >
-          {/* Header */}
-          <View
-            style={{
-              alignItems: "flex-start",
-              marginBottom: 16,
+    <LinearGradient colors={["#f8f9fa", "#ffffff"]} style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <Animated.View style={[{ flex: 1 }, focusStyle]}>
+          <FlatList
+            data={saved as any[]}
+            keyExtractor={(item) => String((item as any)?.id)}
+            numColumns={2}
+            contentContainerStyle={{
+              paddingHorizontal: contentPadding,
+              paddingTop: 18,
+              paddingBottom: tabBarHeight + 32,
+              maxWidth: 900,
+              width: "100%",
+              alignSelf: "center",
             }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: "800",
-                letterSpacing: 0.6,
-                textTransform: "uppercase",
-                color: "#6B7280",
-              }}
-            >
-              Saved
-            </Text>
-            <Text
-              style={{
-                fontSize: 26,
-                fontWeight: "800",
-                color: "#111827",
-                marginTop: 6,
-              }}
-            >
-              Saved events
-            </Text>
-            <Text
-              style={{
-                fontSize: 13,
-                color: "#6B7280",
-                marginTop: 6,
-                maxWidth: isWide ? 560 : undefined,
-              }}
-            >
-              {savedCount === 0
-                ? "Save an event to see it here."
-                : `${savedCount} saved event${savedCount === 1 ? "" : "s"}.`}
-            </Text>
-          </View>
-
-          {savedCount === 0 ? (
-            <View
-              style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: 20,
-                paddingHorizontal: 16,
-                paddingVertical: 18,
-                shadowColor: "#000",
-                shadowOpacity: 0.04,
-                shadowRadius: 10,
-                shadowOffset: { width: 0, height: 4 },
-                elevation: 3,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 15,
-                  fontWeight: "700",
-                  color: "#111827",
-                  marginBottom: 6,
-                }}
-              >
-                Nothing saved yet
-              </Text>
-              <Text style={{ fontSize: 13, color: "#6B7280", lineHeight: 18 }}>
-                Open an event and tap “Save this Venue” (or save any event) to
-                add it here.
-              </Text>
-
-              <TouchableOpacity
-                activeOpacity={0.9}
-                onPress={() => router.push("/event")}
-                style={{
-                  marginTop: 12,
-                  alignSelf: "flex-start",
-                  borderRadius: 999,
-                  backgroundColor: "#111827",
-                  paddingHorizontal: 14,
-                  paddingVertical: 10,
-                }}
-              >
-                <Text
-                  style={{ fontSize: 13, fontWeight: "800", color: "#fff" }}
-                >
-                  Browse events
+            columnWrapperStyle={{ gap: gridGap }}
+            ListHeaderComponent={
+              <View style={{ marginBottom: 14 }}>
+                <Text style={styles.headerTitle}>SAVED</Text>
+                <Text style={styles.headerBody}>
+                  {savedCount === 0
+                    ? "Save events you love for quick access."
+                    : `${savedCount} saved event${savedCount === 1 ? "" : "s"}`}
                 </Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            saved.map((item: any) => {
+              </View>
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyTitle}>No saved events</Text>
+                <Text style={styles.emptyBody}>
+                  Tap the heart on an event to save it.
+                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => router.push("/event")}
+                  style={styles.emptyButton}
+                >
+                  <Text style={styles.emptyButtonText}>Browse events</Text>
+                </TouchableOpacity>
+              </View>
+            }
+            renderItem={({ item }) => {
               const title = getSavedTitle(item);
-              const locationLine = getSavedLocationLine(item);
-              const dateLine = getSavedDateLine(item);
+              const priceLabel = getPriceLabel(item) ?? "";
               const imageSource = getSavedImageSource(item);
 
               return (
-                <View
-                  key={String(item.id)}
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    borderRadius: 22,
-                    marginBottom: 12,
-                    overflow: "hidden",
-                    shadowColor: "#000",
-                    shadowOpacity: 0.05,
-                    shadowRadius: 10,
-                    shadowOffset: { width: 0, height: 4 },
-                    elevation: 3,
-                  }}
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/(tabs)/event/[id]",
+                      params: { id: String((item as any).id) },
+                    })
+                  }
+                  style={[
+                    styles.card,
+                    {
+                      width: cardWidth,
+                      height: cardHeight,
+                    },
+                  ]}
                 >
-                  <View style={{ flexDirection: "row" }}>
+                  <View style={{ height: imageHeight }}>
                     <Image
                       source={imageSource}
-                      style={{ width: 84, height: 84 }}
+                      style={styles.cardImage}
                       resizeMode="cover"
                     />
 
-                    <View
-                      style={{ flex: 1, paddingHorizontal: 12, paddingTop: 10 }}
-                    >
-                      <Text
-                        numberOfLines={1}
-                        style={{
-                          fontSize: 15,
-                          fontWeight: "800",
-                          color: "#111827",
-                          marginBottom: 4,
-                        }}
-                      >
-                        {title}
-                      </Text>
-
-                      <View
-                        style={{ flexDirection: "row", alignItems: "center" }}
-                      >
-                        <MapPin size={14} color="#6B7280" />
-                        <Text
-                          numberOfLines={1}
-                          style={{
-                            marginLeft: 6,
-                            fontSize: 12,
-                            color: "#374151",
-                            flex: 1,
-                          }}
-                        >
-                          {locationLine}
-                        </Text>
-                      </View>
-
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          marginTop: 6,
-                        }}
-                      >
-                        <Calendar size={14} color="#6B7280" />
-                        <Text
-                          numberOfLines={1}
-                          style={{
-                            marginLeft: 6,
-                            fontSize: 12,
-                            color: "#374151",
-                          }}
-                        >
-                          {dateLine}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      paddingHorizontal: 12,
-                      paddingVertical: 10,
-                      borderTopWidth: 1,
-                      borderTopColor: "#EEF2F7",
-                    }}
-                  >
                     <TouchableOpacity
-                      activeOpacity={0.9}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/(tabs)/event/[id]",
-                          params: { id: String(item.id) },
-                        })
-                      }
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: 999,
-                        backgroundColor: "#111827",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: "#fff",
-                          fontWeight: "800",
-                          fontSize: 12,
-                        }}
-                      >
-                        View
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      activeOpacity={0.9}
+                      activeOpacity={0.85}
                       onPress={() => toggleSave(item)}
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: 999,
-                        backgroundColor: "#EF4444",
-                      }}
+                      style={styles.likeButtonWrap}
                     >
-                      <Text
-                        style={{
-                          color: "#fff",
-                          fontWeight: "800",
-                          fontSize: 12,
-                        }}
+                      <BlurView
+                        intensity={22}
+                        tint="light"
+                        style={styles.likeButton}
                       >
-                        Remove
-                      </Text>
+                        <Heart size={18} color="#111827" strokeWidth={1.5} />
+                      </BlurView>
                     </TouchableOpacity>
                   </View>
-                </View>
+
+                  <View style={styles.cardMeta}>
+                    <Text numberOfLines={1} style={styles.cardTitle}>
+                      {title.toUpperCase()}
+                    </Text>
+                    <Text numberOfLines={1} style={styles.cardPrice}>
+                      {priceLabel ? priceLabel.toUpperCase() : ""}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
               );
-            })
-          )}
-        </ScrollView>
-      </Animated.View>
-    </SafeAreaView>
+            }}
+          />
+        </Animated.View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
+
+const styles = StyleSheet.create({
+  headerTitle: {
+    fontFamily: "BebasNeue",
+    fontSize: 42,
+    letterSpacing: 1,
+    color: "#111827",
+  },
+  headerBody: {
+    marginTop: 6,
+    fontFamily: "Inter-Regular",
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
+  },
+  cardImage: {
+    width: "100%",
+    height: "100%",
+  },
+  likeButtonWrap: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    overflow: "hidden",
+  },
+  likeButton: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardMeta: {
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 14,
+  },
+  cardTitle: {
+    fontFamily: "BebasNeue",
+    fontSize: 18,
+    letterSpacing: 1,
+    color: "#111827",
+  },
+  cardPrice: {
+    marginTop: 4,
+    fontFamily: "BebasNeue",
+    fontSize: 16,
+    letterSpacing: 1,
+    color: "#111827",
+    opacity: 0.7,
+  },
+  emptyCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
+  },
+  emptyTitle: {
+    fontFamily: "BebasNeue",
+    fontSize: 22,
+    letterSpacing: 1,
+    color: "#111827",
+  },
+  emptyBody: {
+    marginTop: 6,
+    fontFamily: "Inter-Regular",
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  emptyButton: {
+    marginTop: 12,
+    alignSelf: "flex-start",
+    backgroundColor: "#111827",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+  },
+  emptyButtonText: {
+    fontFamily: "Inter-Regular",
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: 0.2,
+  },
+});
