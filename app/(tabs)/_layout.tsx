@@ -73,6 +73,14 @@ export default function TabsLayout() {
           ),
         }}
       />
+
+      {/* Hide detail screen from the tab bar (still routable). */}
+      <Tabs.Screen
+        name="event/[id]"
+        options={{
+          href: null,
+        }}
+      />
       <Tabs.Screen
         name="saved"
         options={{

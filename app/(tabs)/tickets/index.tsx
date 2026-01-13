@@ -5,6 +5,7 @@ import { useIsFocused } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   Text,
@@ -24,6 +25,7 @@ const TicketsScreen: React.FC = () => {
   const tabBarHeight = useBottomTabBarHeight();
 
   const [loading, setLoading] = React.useState(true);
+  const [refreshing, setRefreshing] = React.useState(false);
   const [tickets, setTickets] = React.useState<any[]>([]);
 
   // Focus animation
@@ -44,57 +46,85 @@ const TicketsScreen: React.FC = () => {
     };
   });
 
-  React.useEffect(() => {
-    const load = async () => {
-      setLoading(true);
+  const loadTickets = React.useCallback(async () => {
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData.user) {
+      setTickets([]);
+      return;
+    }
 
-      const { data: authData, error: authError } =
-        await supabase.auth.getUser();
-      if (authError || !authData.user) {
-        setLoading(false);
-        return;
-      }
+    const userId = authData.user.id;
 
-      const userId = authData.user.id;
-
-      const { data, error } = await supabase
-        .from("tickets")
-        .select(
-          `
-          id,
-          event_id,
-          buyer_name,
-          buyer_email,
-          quantity,
-          tier_name,
-          created_at,
-          status,
-          event:event_id (
-            id,
-            name
-          )
+    const { data, error } = await supabase
+      .from("tickets")
+      .select(
         `
+        id,
+        event_id,
+        buyer_name,
+        buyer_email,
+        quantity,
+        tier_name,
+        created_at,
+        status,
+        event:event_id (
+          id,
+          name
         )
-        .eq("buyer_id", userId)
-        .eq("status", "paid")
-        .order("created_at", { ascending: false });
+      `
+      )
+      .eq("buyer_id", userId)
+      .eq("status", "paid")
+      .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("tickets load error", error.message);
-        setTickets([]);
-      } else {
-        setTickets(data ?? []);
+    if (error) {
+      console.error("tickets load error", error.message);
+      setTickets([]);
+      return;
+    }
+
+    setTickets(data ?? []);
+  }, []);
+
+  React.useEffect(() => {
+    if (!isFocused) return;
+    let mounted = true;
+
+    const run = async () => {
+      setLoading(true);
+      try {
+        await loadTickets();
+      } finally {
+        if (mounted) setLoading(false);
       }
-      setLoading(false);
     };
 
-    load();
-  }, []);
+    run();
+    return () => {
+      mounted = false;
+    };
+  }, [isFocused, loadTickets]);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadTickets();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadTickets]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#020617" }}>
       <Animated.View style={[{ flex: 1 }, focusStyle]}>
         <ScrollView
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#9CA3AF"
+            />
+          }
           contentContainerStyle={{
             paddingHorizontal: 16,
             paddingTop: 16,
@@ -127,9 +157,50 @@ const TicketsScreen: React.FC = () => {
           {loading ? (
             <Text style={{ color: "#9CA3AF", fontSize: 13 }}>Loading…</Text>
           ) : tickets.length === 0 ? (
-            <Text style={{ color: "#9CA3AF", fontSize: 13 }}>
-              You don’t have any issued tickets yet.
-            </Text>
+            <View
+              style={{
+                backgroundColor: "#0B1220",
+                borderRadius: 20,
+                padding: 16,
+                borderWidth: 1,
+                borderColor: "rgba(148,163,184,0.25)",
+              }}
+            >
+              <Text
+                style={{ color: "#E5E7EB", fontSize: 15, fontWeight: "700" }}
+              >
+                No tickets yet
+              </Text>
+              <Text
+                style={{
+                  color: "#94A3B8",
+                  fontSize: 13,
+                  marginTop: 6,
+                  lineHeight: 18,
+                }}
+              >
+                Once you purchase a ticket, it will appear here with a QR code
+                for entry.
+              </Text>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => router.push("/event")}
+                style={{
+                  marginTop: 12,
+                  alignSelf: "flex-start",
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  borderRadius: 999,
+                  backgroundColor: "rgba(255,255,255,0.14)",
+                }}
+              >
+                <Text
+                  style={{ color: "#fff", fontWeight: "800", fontSize: 12 }}
+                >
+                  Browse events
+                </Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             tickets.map((t) => {
               const created =

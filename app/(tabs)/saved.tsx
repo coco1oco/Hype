@@ -2,9 +2,10 @@
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useIsFocused } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import { Heart, Ticket } from "lucide-react-native";
+import { Calendar, MapPin } from "lucide-react-native";
 import React from "react";
 import {
+  Image,
   SafeAreaView,
   ScrollView,
   Text,
@@ -20,6 +21,58 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { FavoritesContext } from "../../context/FavoritesContext";
+
+const fallbackImage = require("../../assets/twice.jpg");
+
+function toText(value: unknown) {
+  return String(value ?? "").trim();
+}
+
+function getSavedTitle(item: any) {
+  return (
+    toText(item?.name) ||
+    toText(item?.title) ||
+    toText(item?.event_name) ||
+    "Saved event"
+  );
+}
+
+function getSavedLocationLine(item: any) {
+  const location = toText(item?.location);
+  const venue = toText(item?.venue);
+  const city = toText(item?.city);
+
+  if (location) return location;
+  if (venue && city) return `${venue}, ${city}`;
+  return venue || city || "Location TBA";
+}
+
+function getSavedDateLine(item: any) {
+  const raw = item?.date ?? item?.start_time ?? item?.created_at;
+  const d = new Date(String(raw ?? ""));
+  if (Number.isNaN(d.getTime())) return "Date TBA";
+  return d.toLocaleString("en-PH", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function getSavedImageSource(item: any) {
+  const featured = item?.featured_images;
+  if (Array.isArray(featured) && featured.length > 0) {
+    const first = featured[0];
+    if (typeof first === "string" && first.trim()) {
+      return { uri: first };
+    }
+  }
+  if (typeof item?.image === "string" && item.image.trim()) {
+    return { uri: item.image };
+  }
+  return fallbackImage;
+}
 
 export default function SavedScreen() {
   const router = useRouter();
@@ -61,347 +114,239 @@ export default function SavedScreen() {
             width: "100%",
           }}
         >
-          {/* Header / collections card */}
+          {/* Header */}
           <View
             style={{
-              alignItems: "center",
-              marginBottom: 24,
+              alignItems: "flex-start",
+              marginBottom: 16,
             }}
           >
-            <View
-              style={{
-                width: 96,
-                height: 96,
-                borderRadius: 32,
-                backgroundColor: "#FFFFFF",
-                shadowColor: "#000",
-                shadowOpacity: 0.06,
-                shadowRadius: 18,
-                shadowOffset: { width: 0, height: 8 },
-                elevation: 4,
-                justifyContent: "center",
-                alignItems: "center",
-                marginBottom: 12,
-              }}
-            >
-              <View
-                style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 18,
-                  backgroundColor: "#F1F5FF",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Ticket size={26} color="#2563EB" />
-              </View>
-            </View>
-
             <Text
               style={{
-                fontSize: 11,
-                letterSpacing: 1.3,
+                fontSize: 12,
+                fontWeight: "800",
+                letterSpacing: 0.6,
                 textTransform: "uppercase",
-                color: "#9CA3AF",
-                marginBottom: 4,
+                color: "#6B7280",
               }}
             >
-              Collections
+              Saved
             </Text>
             <Text
               style={{
-                fontSize: 22,
-                fontWeight: "700",
+                fontSize: 26,
+                fontWeight: "800",
                 color: "#111827",
-                marginBottom: 4,
-                textAlign: "center",
+                marginTop: 6,
               }}
             >
-              Favorites & Saved Venues
+              Saved events
             </Text>
             <Text
               style={{
                 fontSize: 13,
                 color: "#6B7280",
-                textAlign: "center",
+                marginTop: 6,
                 maxWidth: isWide ? 560 : undefined,
               }}
             >
-              Quick access to events you love and locations you plan to revisit.
+              {savedCount === 0
+                ? "Save an event to see it here."
+                : `${savedCount} saved event${savedCount === 1 ? "" : "s"}.`}
             </Text>
           </View>
 
-          {/* Favorite lineups */}
-          <Text
-            style={{
-              fontSize: 12,
-              letterSpacing: 1,
-              textTransform: "uppercase",
-              color: "#6B7280",
-              marginBottom: 6,
-            }}
-          >
-            Events
-          </Text>
-
-          <View
-            style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: 20,
-              paddingHorizontal: 16,
-              paddingVertical: 18,
-              marginBottom: 24,
-              shadowColor: "#000",
-              shadowOpacity: 0.04,
-              shadowRadius: 10,
-              shadowOffset: { width: 0, height: 4 },
-              elevation: 3,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: "600",
-                color: "#111827",
-                marginBottom: 4,
-              }}
-            >
-              Saved events
-            </Text>
-
+          {savedCount === 0 ? (
             <View
               style={{
-                marginTop: 10,
-                borderRadius: 16,
-                backgroundColor: "#F9FAFB",
+                backgroundColor: "#FFFFFF",
+                borderRadius: 20,
                 paddingHorizontal: 16,
-                paddingVertical: 14,
+                paddingVertical: 18,
+                shadowColor: "#000",
+                shadowOpacity: 0.04,
+                shadowRadius: 10,
+                shadowOffset: { width: 0, height: 4 },
+                elevation: 3,
               }}
             >
               <Text
                 style={{
-                  fontSize: 14,
-                  fontWeight: "600",
-                  color: "#4B5563",
-                  marginBottom: 4,
-                  textAlign: "center",
+                  fontSize: 15,
+                  fontWeight: "700",
+                  color: "#111827",
+                  marginBottom: 6,
                 }}
               >
-                {savedCount === 0 ? "No saved events yet" : "Your saved list"}
+                Nothing saved yet
               </Text>
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: "#6B7280",
-                  textAlign: "center",
-                  marginBottom: 12,
-                }}
-              >
-                Tap the save button on any event to see it here instantly.
+              <Text style={{ fontSize: 13, color: "#6B7280", lineHeight: 18 }}>
+                Open an event and tap “Save this Venue” (or save any event) to
+                add it here.
               </Text>
 
               <TouchableOpacity
                 activeOpacity={0.9}
                 onPress={() => router.push("/event")}
                 style={{
-                  alignSelf: "center",
+                  marginTop: 12,
+                  alignSelf: "flex-start",
                   borderRadius: 999,
-                  backgroundColor: "#2563EB",
-                  paddingHorizontal: 24,
+                  backgroundColor: "#111827",
+                  paddingHorizontal: 14,
                   paddingVertical: 10,
                 }}
               >
                 <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "600",
-                    color: "#FFFFFF",
-                  }}
+                  style={{ fontSize: 13, fontWeight: "800", color: "#fff" }}
                 >
                   Browse events
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
-
-          {/* Saved locations header */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginBottom: 8,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                letterSpacing: 1,
-                textTransform: "uppercase",
-                color: "#6B7280",
-              }}
-            >
-              Venues
-            </Text>
-            {savedCount > 0 && (
-              <View
-                style={{
-                  marginLeft: 6,
-                  minWidth: 18,
-                  paddingHorizontal: 6,
-                  height: 18,
-                  borderRadius: 9,
-                  backgroundColor: "#2563EB",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 11,
-                    fontWeight: "600",
-                    color: "#FFFFFF",
-                  }}
-                >
-                  {savedCount}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Saved locations list */}
-          {savedCount === 0 ? (
-            <Text
-              style={{
-                fontSize: 13,
-                color: "#9CA3AF",
-                marginTop: 8,
-              }}
-            >
-              Save a venue from an event page and it will appear here.
-            </Text>
           ) : (
-            saved.map((event) => (
-              <View
-                key={event.id}
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: 22,
-                  paddingHorizontal: 14,
-                  paddingVertical: 12,
-                  marginBottom: 12,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  shadowColor: "#000",
-                  shadowOpacity: 0.04,
-                  shadowRadius: 8,
-                  shadowOffset: { width: 0, height: 3 },
-                  elevation: 2,
-                }}
-              >
-                {/* Thumbnail */}
+            saved.map((item: any) => {
+              const title = getSavedTitle(item);
+              const locationLine = getSavedLocationLine(item);
+              const dateLine = getSavedDateLine(item);
+              const imageSource = getSavedImageSource(item);
+
+              return (
                 <View
+                  key={String(item.id)}
                   style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 14,
-                    backgroundColor: "#EEF2FF",
-                    marginRight: 12,
-                    justifyContent: "center",
-                    alignItems: "center",
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 22,
+                    marginBottom: 12,
+                    overflow: "hidden",
+                    shadowColor: "#000",
+                    shadowOpacity: 0.05,
+                    shadowRadius: 10,
+                    shadowOffset: { width: 0, height: 4 },
+                    elevation: 3,
                   }}
                 >
-                  <Heart size={18} color="#2563EB" />
-                </View>
+                  <View style={{ flexDirection: "row" }}>
+                    <Image
+                      source={imageSource}
+                      style={{ width: 84, height: 84 }}
+                      resizeMode="cover"
+                    />
 
-                {/* Text */}
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontWeight: "600",
-                      color: "#111827",
-                      marginBottom: 2,
-                    }}
-                    numberOfLines={1}
-                  >
-                    {event.title}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      color: "#4B5563",
-                    }}
-                    numberOfLines={1}
-                  >
-                    {event.venue}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: "#9CA3AF",
-                      marginTop: 2,
-                    }}
-                    numberOfLines={1}
-                  >
-                    {event.city}
-                  </Text>
-                </View>
+                    <View
+                      style={{ flex: 1, paddingHorizontal: 12, paddingTop: 10 }}
+                    >
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          fontSize: 15,
+                          fontWeight: "800",
+                          color: "#111827",
+                          marginBottom: 4,
+                        }}
+                      >
+                        {title}
+                      </Text>
 
-                {/* Buttons */}
-                <View style={{ marginLeft: 8, alignItems: "flex-end" }}>
-                  <TouchableOpacity
-                    activeOpacity={0.9}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/(tabs)/event/[id]",
-                        params: { id: String(event.id) },
-                      })
-                    }
+                      <View
+                        style={{ flexDirection: "row", alignItems: "center" }}
+                      >
+                        <MapPin size={14} color="#6B7280" />
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            marginLeft: 6,
+                            fontSize: 12,
+                            color: "#374151",
+                            flex: 1,
+                          }}
+                        >
+                          {locationLine}
+                        </Text>
+                      </View>
+
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginTop: 6,
+                        }}
+                      >
+                        <Calendar size={14} color="#6B7280" />
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            marginLeft: 6,
+                            fontSize: 12,
+                            color: "#374151",
+                          }}
+                        >
+                          {dateLine}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View
                     style={{
-                      paddingHorizontal: 14,
-                      paddingVertical: 6,
-                      borderRadius: 999,
-                      borderWidth: 1,
-                      borderColor: "#D1D5DB",
-                      marginBottom: 6,
-                      backgroundColor: "#FFFFFF",
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      borderTopWidth: 1,
+                      borderTopColor: "#EEF2F7",
                     }}
                   >
-                    <Text
+                    <TouchableOpacity
+                      activeOpacity={0.9}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(tabs)/event/[id]",
+                          params: { id: String(item.id) },
+                        })
+                      }
                       style={{
-                        fontSize: 13,
-                        fontWeight: "600",
-                        color: "#111827",
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        borderRadius: 999,
+                        backgroundColor: "#111827",
                       }}
                     >
-                      View
-                    </Text>
-                  </TouchableOpacity>
+                      <Text
+                        style={{
+                          color: "#fff",
+                          fontWeight: "800",
+                          fontSize: 12,
+                        }}
+                      >
+                        View
+                      </Text>
+                    </TouchableOpacity>
 
-                  <TouchableOpacity
-                    activeOpacity={0.9}
-                    onPress={() => toggleSave(event)}
-                    style={{
-                      paddingHorizontal: 14,
-                      paddingVertical: 6,
-                      borderRadius: 999,
-                      backgroundColor: "#EF4444",
-                    }}
-                  >
-                    <Text
+                    <TouchableOpacity
+                      activeOpacity={0.9}
+                      onPress={() => toggleSave(item)}
                       style={{
-                        fontSize: 13,
-                        fontWeight: "600",
-                        color: "#FFFFFF",
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        borderRadius: 999,
+                        backgroundColor: "#EF4444",
                       }}
                     >
-                      Remove
-                    </Text>
-                  </TouchableOpacity>
+                      <Text
+                        style={{
+                          color: "#fff",
+                          fontWeight: "800",
+                          fontSize: 12,
+                        }}
+                      >
+                        Remove
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-            ))
+              );
+            })
           )}
         </ScrollView>
       </Animated.View>
